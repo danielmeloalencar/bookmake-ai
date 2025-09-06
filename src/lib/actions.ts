@@ -26,8 +26,8 @@ export async function generateChapterContentAction(
   try {
     const output = await generateChapterContent(input);
     return output;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating chapter content:', error);
-    throw new Error('Failed to generate chapter content.');
+    throw new Error(error.message || 'Failed to generate chapter content.');
   }
 }

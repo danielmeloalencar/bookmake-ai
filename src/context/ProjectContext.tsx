@@ -192,13 +192,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         
         updateChapter(chapter.id, { content: result.chapterContent, status: 'completed' });
         previousChaptersContent += `## ${chapter.title}\n\n${result.chapterContent}\n\n`;
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Failed to generate content for chapter: ${chapter.title}`, error);
         updateChapter(chapter.id, { status: 'pending' }); // Reset status on failure
         toast({
             variant: "destructive",
             title: `Erro ao gerar capítulo "${chapter.title}"`,
-            description: "Não foi possível gerar o conteúdo. Tente novamente.",
+            description: error.message || "Não foi possível gerar o conteúdo. Tente novamente.",
         });
         break; 
       }
