@@ -63,7 +63,7 @@ export function TopBar() {
               <AlertDialogTitle>Gerar conteúdo para todos os capítulos pendentes?</AlertDialogTitle>
               <AlertDialogDescription>
                 Esta ação gerará conteúdo para todos os capítulos que ainda não foram concluídos. 
-                Qualquer conteúdo existente nesses capítulos será substituído.
+                Qualquer conteúdo existente nesses capítulos pendentes será substituído. Os capítulos já concluídos não serão afetados.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
