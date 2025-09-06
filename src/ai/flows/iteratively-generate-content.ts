@@ -14,6 +14,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import Handlebars from 'handlebars';
 
 const GenerateChapterContentInputSchema = z.object({
   bookDescription: z.string().describe('A high-level description of the book.'),
@@ -86,11 +87,11 @@ const generateChapterContentFlow = ai.defineFlow(
     outputSchema: GenerateChapterContentOutputSchema,
   },
   async (input) => {
+    const template = Handlebars.compile(promptTemplate);
+    const finalPrompt = template(input);
+    
     const { output } = await ai.generate({
-      prompt: {
-        template: promptTemplate,
-        input,
-      },
+      prompt: finalPrompt,
       model: 'googleai/gemini-1.5-flash',
       output: { 
         schema: GenerateChapterContentOutputSchema,
