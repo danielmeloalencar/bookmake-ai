@@ -1,0 +1,219 @@
+
+'use client';
+
+import { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
+import type { BookProject, Chapter } from '@/lib/types';
+import { createOutlineAction, generateChapterContentAction } from '@/lib/actions';
+import { useToast } from "@/hooks/use-toast"
+import { nanoid } from 'nanoid';
+
+type CreateProjectData = {
+  bookDescription: string;
+  targetAudience: string;
+  language: string;
+  difficultyLevel: string;
+  numberOfChapters: number;
+};
+
+type ProjectState = {
+  project: BookProject | null;
+  isLoading: boolean;
+  isCreating: boolean;
+  isGenerating: boolean;
+};
+
+type Action =
+  | { type: 'INITIALIZE_PROJECT'; payload: BookProject | null }
+  | { type: 'START_CREATION' }
+  | { type: 'CREATE_PROJECT_SUCCESS'; payload: BookProject }
+  | { type: 'CREATE_PROJECT_FAILURE' }
+  | { type: 'UPDATE_PROJECT'; payload: Partial<BookProject> }
+  | { type: 'START_GENERATION' }
+  | { type: 'END_GENERATION' }
+  | { type: 'RESET_PROJECT' };
+
+const initialState: ProjectState = {
+  project: null,
+  isLoading: true,
+  isCreating: false,
+  isGenerating: false,
+};
+
+function projectReducer(state: ProjectState, action: Action): ProjectState {
+  switch (action.type) {
+    case 'INITIALIZE_PROJECT':
+      return { ...state, project: action.payload, isLoading: false };
+    case 'START_CREATION':
+      return { ...state, isCreating: true };
+    case 'CREATE_PROJECT_SUCCESS':
+      return { ...state, project: action.payload, isCreating: false };
+    case 'CREATE_PROJECT_FAILURE':
+        return { ...state, isCreating: false };
+    case 'UPDATE_PROJECT':
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, ...action.payload, updatedAt: new Date().toISOString() };
+      localStorage.setItem('bookProject', JSON.stringify(updatedProject));
+      return { ...state, project: updatedProject };
+    case 'START_GENERATION':
+      return { ...state, isGenerating: true };
+    case 'END_GENERATION':
+        return { ...state, isGenerating: false };
+    case 'RESET_PROJECT':
+      localStorage.removeItem('bookProject');
+      return { ...initialState, isLoading: false };
+    default:
+      return state;
+  }
+}
+
+const ProjectContext = createContext<
+  ProjectState & {
+    createNewProject: (data: CreateProjectData) => void;
+    updateChapter: (chapterId: string, data: Partial<Chapter>) => void;
+    addChapter: (title: string) => void;
+    deleteChapter: (chapterId: string) => void;
+    resetProject: () => void;
+    generateAllChapters: () => void;
+  }
+>({
+  ...initialState,
+  createNewProject: () => {},
+  updateChapter: () => {},
+  addChapter: () => {},
+  deleteChapter: () => {},
+  resetProject: () => {},
+  generateAllChapters: () => {},
+});
+
+export function ProjectProvider({ children }: { children: React.ReactNode }) {
+  const [state, dispatch] = useReducer(projectReducer, initialState);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    try {
+      const savedProject = localStorage.getItem('bookProject');
+      if (savedProject) {
+        dispatch({ type: 'INITIALIZE_PROJECT', payload: JSON.parse(savedProject) });
+      } else {
+        dispatch({ type: 'INITIALIZE_PROJECT', payload: null });
+      }
+    } catch (error) {
+      console.error("Failed to load project from local storage", error);
+      dispatch({ type: 'INITIALIZE_PROJECT', payload: null });
+    }
+  }, []);
+
+  const createNewProject = useCallback(async (data: CreateProjectData) => {
+    dispatch({ type: 'START_CREATION' });
+    try {
+      const result = await createOutlineAction(data);
+      const newProject: BookProject = {
+        ...data,
+        id: nanoid(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'editing',
+        outline: result.outline.map(o => ({
+          id: nanoid(),
+          title: o.chapterTitle,
+          subchapters: o.subchapters,
+          content: '',
+          status: 'pending',
+        })),
+      };
+      dispatch({ type: 'CREATE_PROJECT_SUCCESS', payload: newProject });
+    } catch (error) {
+        dispatch({ type: 'CREATE_PROJECT_FAILURE' });
+        toast({
+            variant: "destructive",
+            title: "Erro ao criar estrutura",
+            description: "Não foi possível gerar a estrutura do livro. Tente novamente.",
+        });
+      console.error(error);
+    }
+  }, [toast]);
+
+  const updateProject = (payload: Partial<BookProject>) => {
+    dispatch({ type: 'UPDATE_PROJECT', payload });
+  };
+  
+  const updateChapter = useCallback((chapterId: string, data: Partial<Chapter>) => {
+    if (!state.project) return;
+    const newOutline = state.project.outline.map(c =>
+      c.id === chapterId ? { ...c, ...data } : c
+    );
+    updateProject({ outline: newOutline });
+  }, [state.project]);
+
+  const addChapter = useCallback((title: string) => {
+    if (!state.project) return;
+    const newChapter: Chapter = {
+        id: nanoid(),
+        title,
+        subchapters: [],
+        content: '',
+        status: 'pending',
+    }
+    updateProject({ outline: [...state.project.outline, newChapter] });
+  }, [state.project]);
+
+  const deleteChapter = useCallback((chapterId: string) => {
+    if (!state.project) return;
+    const newOutline = state.project.outline.filter(c => c.id !== chapterId);
+    updateProject({ outline: newOutline });
+  }, [state.project]);
+
+  const resetProject = () => dispatch({ type: 'RESET_PROJECT' });
+
+  const generateAllChapters = useCallback(async () => {
+    if (!state.project || state.isGenerating) return;
+    dispatch({ type: 'START_GENERATION' });
+    updateProject({status: 'generating'});
+    
+    let previousChaptersContent = '';
+    
+    for (const chapter of state.project.outline) {
+      if (chapter.status === 'completed') {
+        previousChaptersContent += `## ${chapter.title}\n\n${chapter.content}\n\n`;
+        continue;
+      }
+
+      updateChapter(chapter.id, { status: 'generating' });
+
+      try {
+        const result = await generateChapterContentAction({
+          bookDescription: state.project.bookDescription,
+          targetAudience: state.project.targetAudience,
+          language: state.project.language,
+          difficultyLevel: state.project.difficultyLevel,
+          chapterOutline: `Capítulo: ${chapter.title}\nSubcapítulos: ${chapter.subchapters.join(', ')}`,
+          previousChaptersContent: previousChaptersContent,
+        });
+        
+        updateChapter(chapter.id, { content: result.chapterContent, status: 'completed' });
+        previousChaptersContent += `## ${chapter.title}\n\n${result.chapterContent}\n\n`;
+      } catch (error) {
+        console.error(`Failed to generate content for chapter: ${chapter.title}`, error);
+        updateChapter(chapter.id, { status: 'pending' }); // Reset status on failure
+        toast({
+            variant: "destructive",
+            title: `Erro ao gerar capítulo "${chapter.title}"`,
+            description: "Não foi possível gerar o conteúdo. Tente novamente.",
+        });
+        break; 
+      }
+    }
+    
+    updateProject({status: 'editing'});
+    dispatch({ type: 'END_GENERATION' });
+  }, [state.project, state.isGenerating, updateChapter, toast]);
+
+
+  return (
+    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters }}>
+      {children}
+    </ProjectContext.Provider>
+  );
+}
+
+export const useProject = () => useContext(ProjectContext);
