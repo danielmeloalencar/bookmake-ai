@@ -44,7 +44,6 @@ export function TopBar() {
   };
 
   const pendingChaptersCount = project.outline.filter(c => c.status !== 'completed').length;
-  const isGenerationComplete = pendingChaptersCount === 0;
 
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card">
@@ -57,7 +56,7 @@ export function TopBar() {
       <div className="flex items-center gap-2">
          <AlertDialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
           <AlertDialogTrigger asChild>
-            <Button disabled={isGenerating || isGenerationComplete}>
+            <Button disabled={isGenerating}>
               {isGenerating ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
