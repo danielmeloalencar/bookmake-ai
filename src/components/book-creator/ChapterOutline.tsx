@@ -65,8 +65,15 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
 
   const handleDrop = (e: React.DragEvent<HTMLLIElement>) => {
     e.preventDefault();
-    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) return;
-    reorderChapters(draggedIndex, dropIndex);
+    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) {
+        handleDragEnd();
+        return;
+    };
+    
+    // The dropIndex is the item we are dropping on. If we drag down, we want to place it after, if we drag up, before.
+    const targetIndex = draggedIndex < dropIndex ? dropIndex -1 : dropIndex
+    reorderChapters(draggedIndex, targetIndex);
+    handleDragEnd();
   };
 
   const handleDragEnd = () => {
@@ -94,6 +101,8 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
       <ul 
         className="space-y-1"
         onDragLeave={() => setDropIndex(null)}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
       >
         {project.outline.map((chapter, index) => (
           <li 
@@ -101,19 +110,16 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDragEnter={() => handleDragEnter(index)}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
             onDragEnd={handleDragEnd}
             className={cn(
-              'relative transition-all',
-              draggedIndex === index ? 'opacity-50' : 'opacity-100',
-              dropIndex !== null && dropIndex === index && 'pt-10' 
+              'relative transition-transform',
+              draggedIndex === index ? 'opacity-30 scale-95' : 'opacity-100 scale-100',
             )}
           >
             {dropIndex === index && draggedIndex !== null && draggedIndex > index && (
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-primary rounded-full -mt-1" />
+              <div className="absolute -top-1 left-0 right-0 h-1.5 bg-primary rounded-full z-10" />
             )}
-            <div
+             <div
               onClick={() => onSelectChapter(chapter.id)}
               className={cn(
                 'w-full text-left p-2 rounded-md flex items-center justify-between group cursor-pointer bg-card',
@@ -159,7 +165,7 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
               </div>
             </div>
              {dropIndex === index && draggedIndex !== null && draggedIndex < index && (
-                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-primary rounded-full -mb-1" />
+                <div className="absolute -bottom-1 left-0 right-0 h-1.5 bg-primary rounded-full z-10" />
               )}
           </li>
         ))}
