@@ -81,7 +81,7 @@ const ProjectContext = createContext<
     addChapter: (title: string) => void;
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
-    generateAllChapters: (mode: 'pending' | 'all') => void;
+    generateAllChapters: (mode: 'pending' | 'all', extraPrompt?: string) => void;
     generateSingleChapter: (chapterId: string, options?: GenerationOptions) => void;
     reorderChapters: (startIndex: number, endIndex: number) => void;
   }
@@ -235,7 +235,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [state.project, updateChapter, toast, globalMinWords]);
 
 
-  const generateAllChapters = useCallback(async (mode: 'pending' | 'all') => {
+  const generateAllChapters = useCallback(async (mode: 'pending' | 'all', extraPrompt?: string) => {
     if (!state.project || state.isGenerating) return;
     dispatch({ type: 'START_GENERATION' });
     
@@ -258,9 +258,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     for (const chapter of chaptersToGenerate) {
       try {
-        // When using "Generate All", always generate from scratch unless it's a 'pending' run and the chapter already has content
-        const refine = mode === 'pending' && !!chapter.content;
-        await _generateChapter(chapter, state.project.outline, { refine });
+        // When using "Generate All", always generate from scratch if mode is 'all'.
+        // If mode is 'pending', only refine if content already exists.
+        const refine = mode === 'all' ? false : !!chapter.content;
+        await _generateChapter(chapter, state.project.outline, { refine, extraPrompt });
       } catch (e) {
         // Stop generation if one chapter fails
         toast({

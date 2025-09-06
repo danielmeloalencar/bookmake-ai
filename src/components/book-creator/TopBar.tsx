@@ -30,17 +30,22 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { SettingsModal } from './SettingsModal';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
 
 export function TopBar() {
   const { project, resetProject, generateAllChapters, isGenerating } = useProject();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
+  const [globalExtraPrompt, setGlobalExtraPrompt] = useState('');
+
 
   if (!project) return null;
 
   const handleGenerateClick = (mode: 'pending' | 'all') => {
-    generateAllChapters(mode);
+    generateAllChapters(mode, globalExtraPrompt);
     setIsGenerateDialogOpen(false);
+    setGlobalExtraPrompt(''); // Reset after use
   };
 
   const pendingChaptersCount = project.outline.filter(c => c.status !== 'completed').length;
@@ -69,9 +74,22 @@ export function TopBar() {
             <AlertDialogHeader>
               <AlertDialogTitle>Como você gostaria de gerar o conteúdo?</AlertDialogTitle>
               <AlertDialogDescription>
-                Você pode gerar conteúdo apenas para os capítulos que ainda não foram concluídos ou para todos os capítulos, substituindo o que já existe.
+                Você pode gerar conteúdo apenas para os capítulos pendentes ou para todos, substituindo o que já existe.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="py-4 space-y-2">
+                <Label htmlFor="global-prompt">Prompt Adicional (Opcional)</Label>
+                <Textarea 
+                  id="global-prompt"
+                  placeholder="Ex: Mantenha um tom bem-humorado e use analogias."
+                  value={globalExtraPrompt}
+                  onChange={(e) => setGlobalExtraPrompt(e.target.value)}
+                  rows={3}
+                />
+                 <p className="text-sm text-muted-foreground">
+                  Este prompt será aplicado a todos os capítulos gerados nesta ação.
+                </p>
+            </div>
             <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
                <Button onClick={() => handleGenerateClick('pending')} disabled={pendingChaptersCount === 0}>
                 Gerar somente capítulos pendentes ({pendingChaptersCount})
