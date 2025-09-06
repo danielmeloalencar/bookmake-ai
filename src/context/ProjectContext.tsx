@@ -201,6 +201,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         difficultyLevel: state.project.difficultyLevel,
         chapterOutline: `Título: ${chapter.title}\nSubtópicos: ${chapter.subchapters.join(', ')}`,
         previousChaptersContent: previousChaptersContent,
+        currentContent: chapter.content,
         extraPrompt: options.extraPrompt,
         minWords: options.minWords,
       };

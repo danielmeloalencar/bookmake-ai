@@ -21,7 +21,8 @@ const GenerateChapterContentInputSchema = z.object({
   chapterOutline: z.string().describe('The outline for the current chapter, including subchapters.'),
   previousChaptersContent: z.string().describe('The content of the previous chapters.'),
   difficultyLevel: z.string().describe('The target difficulty level of the book.'),
-  extraPrompt: z.string().optional().describe('Extra instructions or prompt to guide content generation.'),
+  currentContent: z.string().optional().describe('The existing content of the chapter to be refined or modified.'),
+  extraPrompt: z.string().optional().describe('Extra instructions or prompt to guide content generation/modification.'),
   minWords: z.number().optional().describe('The minimum number of words for the generated content.'),
 });
 
@@ -47,18 +48,27 @@ const generateChapterContentPrompt = ai.definePrompt({
   name: 'generateChapterContentPrompt',
   input: {schema: GenerateChapterContentInputSchema},
   output: {schema: GenerateChapterContentOutputSchema},
-  prompt: `You are an AI assistant specialized in writing books. Your task is to generate content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
+  prompt: `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
 
 Do not add chapter numbering in the content, just the text itself.
+
+If existing content for the chapter is provided as 'Current Content', your task is to refine or modify it based on the 'Additional Instructions'. If 'Current Content' is empty, you should write the chapter from scratch based on the outline.
 
 Book Description: {{{bookDescription}}}
 Target Audience: {{{targetAudience}}}
 Language: {{{language}}}
 Difficulty Level: {{{difficultyLevel}}}
 
-Previous Chapters Content: {{{previousChaptersContent}}}
+Previous Chapters Content:
+{{{previousChaptersContent}}}
 
-Current Chapter Outline: {{{chapterOutline}}}
+Current Chapter Outline:
+{{{chapterOutline}}}
+
+{{#if currentContent}}
+Current Content (to be refined or modified):
+{{{currentContent}}}
+{{/if}}
 
 {{#if extraPrompt}}
 Additional Instructions: {{{extraPrompt}}}
@@ -68,7 +78,7 @@ Additional Instructions: {{{extraPrompt}}}
 The chapter content should have at least {{{minWords}}} words.
 {{/if}}
 
-Generate the content for the current chapter based on the outline. The content should be well-written, engaging, and consistent with the overall book narrative.`,
+Generate the new, complete content for the current chapter. The content should be well-written, engaging, and consistent with the overall book narrative.`,
 });
 
 const generateChapterContentFlow = ai.defineFlow(
