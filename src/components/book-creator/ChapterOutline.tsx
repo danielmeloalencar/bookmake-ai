@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useProject } from '@/context/ProjectContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
   Trash2,
   FileEdit,
   Sparkles,
+  GripVertical,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -31,7 +33,9 @@ interface ChapterOutlineProps {
 }
 
 export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutlineProps) {
-  const { project, addChapter, deleteChapter, updateChapter, generateSingleChapter, isGenerating } = useProject();
+  const { project, addChapter, deleteChapter, updateChapter, generateSingleChapter, isGenerating, reorderChapters } = useProject();
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   const handleRenameChapter = (id: string) => {
     const newTitle = prompt("Digite o novo título do capítulo:");
@@ -44,6 +48,30 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
     e.stopPropagation();
     generateSingleChapter(chapterId);
   }
+
+  const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnter = (index: number) => {
+    if (draggedIndex === null || draggedIndex === index) return;
+    setDropIndex(index);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
+    e.preventDefault(); 
+  };
+
+  const handleDrop = () => {
+    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) return;
+    reorderChapters(draggedIndex, dropIndex);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDropIndex(null);
+  };
 
   const statusIcons = {
     pending: <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -62,9 +90,28 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
           Adicionar
         </Button>
       </div>
-      <ul className="space-y-1">
-        {project.outline.map((chapter) => (
-          <li key={chapter.id}>
+      <ul 
+        className="space-y-1"
+        onDragLeave={() => setDropIndex(null)}
+      >
+        {project.outline.map((chapter, index) => (
+          <li 
+            key={chapter.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragEnter={() => handleDragEnter(index)}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+            className={cn(
+              'relative transition-all',
+              draggedIndex === index ? 'opacity-50' : 'opacity-100',
+              dropIndex !== null && dropIndex === index && 'pt-10' 
+            )}
+          >
+            {dropIndex === index && (
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-primary rounded-full -mt-1" />
+            )}
             <div
               onClick={() => onSelectChapter(chapter.id)}
               className={cn(
@@ -76,6 +123,7 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
               )}
             >
               <div className="flex items-center gap-3 truncate">
+                <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
                 {statusIcons[chapter.status]}
                 <span className="flex-1 truncate">{chapter.title}</span>
               </div>
@@ -109,6 +157,9 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                 </AlertDialog>
               </div>
             </div>
+             {dropIndex !== null && index === project.outline.length - 1 && dropIndex > index && (
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-primary rounded-full -mb-1" />
+              )}
           </li>
         ))}
       </ul>

@@ -75,6 +75,7 @@ const ProjectContext = createContext<
     resetProject: () => void;
     generateAllChapters: () => void;
     generateSingleChapter: (chapterId: string) => void;
+    reorderChapters: (startIndex: number, endIndex: number) => void;
   }
 >({
   ...initialState,
@@ -85,6 +86,7 @@ const ProjectContext = createContext<
   resetProject: () => {},
   generateAllChapters: () => {},
   generateSingleChapter: () => {},
+  reorderChapters: () => {},
 });
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -165,6 +167,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     updateProject({ outline: newOutline });
   }, [state.project]);
 
+  const reorderChapters = useCallback((startIndex: number, endIndex: number) => {
+    if (!state.project) return;
+    const newOutline = Array.from(state.project.outline);
+    const [removed] = newOutline.splice(startIndex, 1);
+    newOutline.splice(endIndex, 0, removed);
+    updateProject({ outline: newOutline });
+  }, [state.project]);
+
   const resetProject = () => dispatch({ type: 'RESET_PROJECT' });
 
   const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[]) => {
@@ -196,7 +206,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           title: `Erro ao gerar capítulo "${chapter.title}"`,
           description: error.message || "Não foi possível gerar o conteúdo. Tente novamente.",
       });
-      throw error; // Re-throw to stop bulk generation
+      throw error; // Re-throw to bulk generation
     }
   }, [state.project, updateChapter, toast]);
 
@@ -218,7 +228,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     
     updateProject({status: 'editing'});
     dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter]);
+  }, [state.project, state.isGenerating, _generateChapter, updateProject]);
 
   const generateSingleChapter = useCallback(async (chapterId: string) => {
     if (!state.project || state.isGenerating) return;
@@ -237,11 +247,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     updateProject({status: 'editing'});
     dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter]);
+  }, [state.project, state.isGenerating, _generateChapter, updateProject]);
 
 
   return (
-    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters, generateSingleChapter }}>
+    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters, generateSingleChapter, reorderChapters }}>
       {children}
     </ProjectContext.Provider>
   );
