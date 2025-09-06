@@ -1,3 +1,4 @@
+
 // src/ai/flows/iteratively-generate-content.ts
 'use server';
 
@@ -46,20 +47,16 @@ export async function generateChapterContent(
   return generateChapterContentFlow(input);
 }
 
-const generateChapterContentPrompt = ai.definePrompt({
-  name: 'generateChapterContentPrompt',
-  input: {schema: GenerateChapterContentInputSchema},
-  output: {schema: GenerateChapterContentOutputSchema},
-  prompt: `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
+const promptTemplate = `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
 
 Do not add chapter numbering in the content, just the text itself.
 
 If existing content for the chapter is provided as 'Current Content', your task is to refine or modify it based on the 'Additional Instructions'. If 'Current Content' is empty, you should write the chapter from scratch based on the outline.
 
-Book Description: {{{bookDescription}}}
-Target Audience: {{{targetAudience}}}
-Language: {{{language}}}
-Difficulty Level: {{{difficultyLevel}}}
+Book Description: {{bookDescription}}
+Target Audience: {{targetAudience}}
+Language: {{language}}
+Difficulty Level: {{difficultyLevel}}
 
 Previous Chapters Content:
 {{{previousChaptersContent}}}
@@ -80,8 +77,7 @@ Additional Instructions: {{{extraPrompt}}}
 The chapter content should have at least {{{minWords}}} words.
 {{/if}}
 
-Generate the new, complete content for the current chapter. The content should be well-written, engaging, and consistent with the overall book narrative.`,
-});
+Generate the new, complete content for the current chapter. The content should be well-written, engaging, and consistent with the overall book narrative.`;
 
 const generateChapterContentFlow = ai.defineFlow(
   {
@@ -90,10 +86,21 @@ const generateChapterContentFlow = ai.defineFlow(
     outputSchema: GenerateChapterContentOutputSchema,
   },
   async (input) => {
-    const {output} = await generateChapterContentPrompt(input, {
-      temperature: input.temperature,
-      seed: input.seed,
+    const { output } = await ai.generate({
+      prompt: {
+        template: promptTemplate,
+        input,
+      },
+      model: 'googleai/gemini-1.5-flash',
+      output: { 
+        schema: GenerateChapterContentOutputSchema,
+      },
+      config: {
+        temperature: input.temperature,
+        seed: input.seed,
+      },
     });
+    
     return output!;
   }
 );
