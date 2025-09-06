@@ -47,14 +47,32 @@ export function TopBar() {
         </h1>
       </div>
       <div className="flex items-center gap-2">
-         <Button onClick={generateAllChapters} disabled={isGenerating || isGenerationComplete}>
-          {isGenerating ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
-          )}
-          {isGenerating ? 'Gerando...' : 'Gerar Tudo'}
-        </Button>
+         <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button disabled={isGenerating || isGenerationComplete}>
+              {isGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              {isGenerating ? 'Gerando...' : 'Gerar Tudo'}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Gerar conteúdo para todos os capítulos pendentes?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação gerará conteúdo para todos os capítulos que ainda não foram concluídos. 
+                Qualquer conteúdo existente nesses capítulos será substituído.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={generateAllChapters}>Confirmar e Gerar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">

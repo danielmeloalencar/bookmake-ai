@@ -20,6 +20,8 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
   const [content, setContent] = useState(chapter.content);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // This effect ensures the local state `content` is updated
+  // if the chapter content changes from an external action (like "Generate All").
   useEffect(() => {
     setContent(chapter.content);
   }, [chapter.id, chapter.content]);
