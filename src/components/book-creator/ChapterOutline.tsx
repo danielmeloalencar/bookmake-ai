@@ -60,10 +60,10 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
       <ul className="space-y-1">
         {project.outline.map((chapter) => (
           <li key={chapter.id}>
-            <button
+            <div
               onClick={() => onSelectChapter(chapter.id)}
               className={cn(
-                'w-full text-left p-2 rounded-md flex items-center justify-between group',
+                'w-full text-left p-2 rounded-md flex items-center justify-between group cursor-pointer',
                 'transition-colors duration-200',
                 activeChapterId === chapter.id
                   ? 'bg-accent text-accent-foreground'
@@ -93,12 +93,12 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteChapter(chapter.id)} className="bg-destructive hover:bg-destructive/90">Deletar</AlertDialogAction>
+                      <AlertDialogAction onClick={(e) => {e.stopPropagation(); deleteChapter(chapter.id)}} className="bg-destructive hover:bg-destructive/90">Deletar</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            </button>
+            </div>
           </li>
         ))}
       </ul>
