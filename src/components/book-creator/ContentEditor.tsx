@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from '../ui/button';
 import { Bold, Italic, Code, Link } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ContentEditorProps {
   chapter: Chapter;
@@ -58,7 +60,7 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
         newText = `*${selectedText}*`;
         break;
       case 'code':
-        newText = `\`\`\`\n${selectedText}\n\`\`\``;
+        newText = '```\n' + selectedText + '\n```';
         break;
       case 'link':
         const url = prompt("Enter the URL:");
@@ -113,7 +115,7 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
           </TabsContent>
           <TabsContent value="preview" className="flex-1 mt-4 overflow-y-auto">
              <div className="prose prose-lg dark:prose-invert max-w-none p-4 border rounded-md min-h-full">
-                {content.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
             </div>
           </TabsContent>
         </Tabs>
