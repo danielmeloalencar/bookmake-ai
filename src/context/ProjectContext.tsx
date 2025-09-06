@@ -260,6 +260,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       try {
         const refine = mode === 'all' ? false : !!chapter.content;
         await _generateChapter(chapter, state.project.outline, { ...options, refine });
+        // Adiciona um atraso de 2 segundos para evitar o erro 429 (Too Many Requests)
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (e) {
         toast({
           variant: "destructive",
