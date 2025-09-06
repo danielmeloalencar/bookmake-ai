@@ -237,17 +237,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!chapterToGenerate) return;
 
     dispatch({ type: 'START_GENERATION' });
-    updateProject({status: 'generating'});
-
     try {
       await _generateChapter(chapterToGenerate, state.project.outline);
     } catch(e) {
       // Error is already handled in _generateChapter
+    } finally {
+      dispatch({ type: 'END_GENERATION' });
     }
-
-    updateProject({status: 'editing'});
-    dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter, updateProject]);
+  }, [state.project, state.isGenerating, _generateChapter]);
 
 
   return (
