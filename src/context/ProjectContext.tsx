@@ -70,6 +70,7 @@ function projectReducer(state: ProjectState, action: Action): ProjectState {
 type GenerationOptions = {
   extraPrompt?: string;
   minWords?: number;
+  refine?: boolean;
 };
 
 const ProjectContext = createContext<
@@ -201,7 +202,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         difficultyLevel: state.project.difficultyLevel,
         chapterOutline: `Título: ${chapter.title}\nSubtópicos: ${chapter.subchapters.join(', ')}`,
         previousChaptersContent: previousChaptersContent,
-        currentContent: chapter.content,
+        currentContent: options.refine ? chapter.content : undefined,
         extraPrompt: options.extraPrompt,
         minWords: options.minWords,
       };
@@ -230,7 +231,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     for (const chapter of chaptersToGenerate) {
       try {
-        await _generateChapter(chapter, state.project.outline);
+        await _generateChapter(chapter, state.project.outline, { refine: false });
       } catch (e) {
         break; // Stop generation if one chapter fails
       }
@@ -245,9 +246,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const chapterToGenerate = state.project.outline.find(c => c.id === chapterId);
     if (!chapterToGenerate) return;
 
+    const hasContent = chapterToGenerate.content && chapterToGenerate.content.trim().length > 0;
+    const finalOptions = { refine: hasContent, ...options };
+
+
     dispatch({ type: 'START_GENERATION' });
     try {
-      await _generateChapter(chapterToGenerate, state.project.outline, options);
+      await _generateChapter(chapterToGenerate, state.project.outline, finalOptions);
     } catch(e) {
       // Error is already handled in _generateChapter
     } finally {

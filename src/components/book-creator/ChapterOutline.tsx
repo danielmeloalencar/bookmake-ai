@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from '../ui/textarea';
 import type { Chapter } from '@/lib/types';
+import { Switch } from '../ui/switch';
 
 
 interface ChapterOutlineProps {
@@ -96,11 +97,14 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
   const [isOpen, setIsOpen] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState('');
   const [minWords, setMinWords] = useState<number | undefined>(undefined);
+  const [refineContent, setRefineContent] = useState(true);
 
   const handleGenerate = () => {
-    generateSingleChapter(chapter.id, { extraPrompt, minWords });
+    generateSingleChapter(chapter.id, { extraPrompt, minWords, refine: refineContent });
     setIsOpen(false);
   }
+  
+  const hasContent = chapter.content && chapter.content.trim().length > 0;
 
   return (
      <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -110,13 +114,28 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
           <DialogTitle>Gerar conteúdo para: {chapter.title}</DialogTitle>
         </DialogHeader>
         <div className="py-4 space-y-4">
+          {hasContent && (
+             <div className="flex items-center space-x-2">
+                <Switch 
+                  id="refine-mode" 
+                  checked={refineContent} 
+                  onCheckedChange={setRefineContent}
+                />
+                <Label htmlFor="refine-mode">Refinar conteúdo existente</Label>
+              </div>
+          )}
           <div>
-            <Label htmlFor="extra-prompt">Prompt Adicional (Opcional)</Label>
+            <Label htmlFor="extra-prompt">
+              {refineContent && hasContent ? 'Instruções Adicionais (Opcional)' : 'Prompt (Opcional)'}
+            </Label>
             <Textarea 
               id="extra-prompt"
               value={extraPrompt}
               onChange={(e) => setExtraPrompt(e.target.value)}
-              placeholder="Ex: Escreva em um tom mais formal, citando exemplos práticos."
+              placeholder={refineContent && hasContent 
+                ? "Ex: Torne o tom mais formal, citando exemplos práticos."
+                : "Ex: Comece o capítulo com uma citação sobre exploração espacial."
+              }
               rows={4}
             />
           </div>
@@ -175,7 +194,6 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
     e.preventDefault();
     if (draggedIndex === null || dropIndex === null) return;
     
-    // Adjust drop index if dragging downwards
     const adjustedDropIndex = draggedIndex < dropIndex ? dropIndex -1 : dropIndex;
 
     if (draggedIndex !== adjustedDropIndex) {
@@ -190,7 +208,6 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLLIElement>) => {
-     // Check if the new target is outside the list container
      if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
         setDropIndex(null);
     }
