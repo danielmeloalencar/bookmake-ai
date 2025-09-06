@@ -63,7 +63,8 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
     e.preventDefault(); 
   };
 
-  const handleDrop = () => {
+  const handleDrop = (e: React.DragEvent<HTMLLIElement>) => {
+    e.preventDefault();
     if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) return;
     reorderChapters(draggedIndex, dropIndex);
   };
@@ -109,13 +110,13 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
               dropIndex !== null && dropIndex === index && 'pt-10' 
             )}
           >
-            {dropIndex === index && (
+            {dropIndex === index && draggedIndex !== null && draggedIndex > index && (
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-primary rounded-full -mt-1" />
             )}
             <div
               onClick={() => onSelectChapter(chapter.id)}
               className={cn(
-                'w-full text-left p-2 rounded-md flex items-center justify-between group cursor-pointer',
+                'w-full text-left p-2 rounded-md flex items-center justify-between group cursor-pointer bg-card',
                 'transition-colors duration-200',
                 activeChapterId === chapter.id
                   ? 'bg-accent text-accent-foreground'
@@ -157,7 +158,7 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                 </AlertDialog>
               </div>
             </div>
-             {dropIndex !== null && index === project.outline.length - 1 && dropIndex > index && (
+             {dropIndex === index && draggedIndex !== null && draggedIndex < index && (
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-primary rounded-full -mb-1" />
               )}
           </li>
