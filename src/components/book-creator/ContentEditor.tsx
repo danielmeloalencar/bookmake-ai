@@ -23,8 +23,10 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
   // This effect ensures the local state `content` is updated
   // if the chapter content changes from an external action (like "Generate All").
   useEffect(() => {
-    setContent(chapter.content);
-  }, [chapter.id, chapter.content]);
+    if (chapter.content !== content) {
+      setContent(chapter.content);
+    }
+  }, [chapter.content, content]);
   
   const useDebounce = (callback: (value: string) => void, delay: number) => {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -69,7 +71,7 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
         if (url) {
           newText = `[${selectedText}](${url})`;
         } else {
-          newText = selectedText;
+          newText = selected-text;
         }
         break;
     }
