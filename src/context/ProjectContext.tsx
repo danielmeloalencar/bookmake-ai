@@ -193,7 +193,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         targetAudience: state.project.targetAudience,
         language: state.project.language,
         difficultyLevel: state.project.difficultyLevel,
-        chapterOutline: `Capítulo: ${chapter.title}\nSubcapítulos: ${chapter.subchapters.join(', ')}`,
+        chapterOutline: `Título: ${chapter.title}\nSubtópicos: ${chapter.subchapters.join(', ')}`,
         previousChaptersContent: previousChaptersContent,
       });
       
