@@ -74,6 +74,7 @@ const ProjectContext = createContext<
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
     generateAllChapters: () => void;
+    generateSingleChapter: (chapterId: string) => void;
   }
 >({
   ...initialState,
@@ -83,6 +84,7 @@ const ProjectContext = createContext<
   deleteChapter: () => {},
   resetProject: () => {},
   generateAllChapters: () => {},
+  generateSingleChapter: () => {},
 });
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -165,52 +167,81 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const resetProject = () => dispatch({ type: 'RESET_PROJECT' });
 
+  const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[]) => {
+    if (!state.project) return;
+
+    const previousChaptersContent = allChapters
+        .filter(c => c.status === 'completed' && c.id !== chapter.id)
+        .map(c => `## ${c.title}\n\n${c.content}`)
+        .join('\n\n---\n\n');
+
+    updateChapter(chapter.id, { status: 'generating' });
+
+    try {
+      const result = await generateChapterContentAction({
+        bookDescription: state.project.bookDescription,
+        targetAudience: state.project.targetAudience,
+        language: state.project.language,
+        difficultyLevel: state.project.difficultyLevel,
+        chapterOutline: `Capítulo: ${chapter.title}\nSubcapítulos: ${chapter.subchapters.join(', ')}`,
+        previousChaptersContent: previousChaptersContent,
+      });
+      
+      updateChapter(chapter.id, { content: result.chapterContent, status: 'completed' });
+    } catch (error: any) {
+      console.error(`Failed to generate content for chapter: ${chapter.title}`, error);
+      updateChapter(chapter.id, { status: 'pending' }); // Reset status on failure
+      toast({
+          variant: "destructive",
+          title: `Erro ao gerar capítulo "${chapter.title}"`,
+          description: error.message || "Não foi possível gerar o conteúdo. Tente novamente.",
+      });
+      throw error; // Re-throw to stop bulk generation
+    }
+  }, [state.project, updateChapter, toast]);
+
+
   const generateAllChapters = useCallback(async () => {
     if (!state.project || state.isGenerating) return;
     dispatch({ type: 'START_GENERATION' });
     updateProject({status: 'generating'});
     
-    let previousChaptersContent = '';
-    
-    for (const chapter of state.project.outline) {
-      if (chapter.status === 'completed') {
-        previousChaptersContent += `## ${chapter.title}\n\n${chapter.content}\n\n`;
-        continue;
-      }
+    const chaptersToGenerate = state.project.outline.filter(c => c.status !== 'completed');
 
-      updateChapter(chapter.id, { status: 'generating' });
-
+    for (const chapter of chaptersToGenerate) {
       try {
-        const result = await generateChapterContentAction({
-          bookDescription: state.project.bookDescription,
-          targetAudience: state.project.targetAudience,
-          language: state.project.language,
-          difficultyLevel: state.project.difficultyLevel,
-          chapterOutline: `Capítulo: ${chapter.title}\nSubcapítulos: ${chapter.subchapters.join(', ')}`,
-          previousChaptersContent: previousChaptersContent,
-        });
-        
-        updateChapter(chapter.id, { content: result.chapterContent, status: 'completed' });
-        previousChaptersContent += `## ${chapter.title}\n\n${result.chapterContent}\n\n`;
-      } catch (error: any) {
-        console.error(`Failed to generate content for chapter: ${chapter.title}`, error);
-        updateChapter(chapter.id, { status: 'pending' }); // Reset status on failure
-        toast({
-            variant: "destructive",
-            title: `Erro ao gerar capítulo "${chapter.title}"`,
-            description: error.message || "Não foi possível gerar o conteúdo. Tente novamente.",
-        });
-        break; 
+        await _generateChapter(chapter, state.project.outline);
+      } catch (e) {
+        break; // Stop generation if one chapter fails
       }
     }
     
     updateProject({status: 'editing'});
     dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, updateChapter, toast]);
+  }, [state.project, state.isGenerating, _generateChapter]);
+
+  const generateSingleChapter = useCallback(async (chapterId: string) => {
+    if (!state.project || state.isGenerating) return;
+    
+    const chapterToGenerate = state.project.outline.find(c => c.id === chapterId);
+    if (!chapterToGenerate) return;
+
+    dispatch({ type: 'START_GENERATION' });
+    updateProject({status: 'generating'});
+
+    try {
+      await _generateChapter(chapterToGenerate, state.project.outline);
+    } catch(e) {
+      // Error is already handled in _generateChapter
+    }
+
+    updateProject({status: 'editing'});
+    dispatch({ type: 'END_GENERATION' });
+  }, [state.project, state.isGenerating, _generateChapter]);
 
 
   return (
-    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters }}>
+    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters, generateSingleChapter }}>
       {children}
     </ProjectContext.Provider>
   );

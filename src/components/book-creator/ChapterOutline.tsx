@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   FileEdit,
+  Sparkles,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -23,7 +24,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Input } from '../ui/input';
 
 interface ChapterOutlineProps {
   activeChapterId: string | null;
@@ -31,7 +31,7 @@ interface ChapterOutlineProps {
 }
 
 export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutlineProps) {
-  const { project, addChapter, deleteChapter, updateChapter } = useProject();
+  const { project, addChapter, deleteChapter, updateChapter, generateSingleChapter, isGenerating } = useProject();
 
   const handleRenameChapter = (id: string) => {
     const newTitle = prompt("Digite o novo título do capítulo:");
@@ -39,6 +39,11 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
       updateChapter(id, { title: newTitle });
     }
   };
+
+  const handleGenerateChapter = (e: React.MouseEvent, chapterId: string) => {
+    e.stopPropagation();
+    generateSingleChapter(chapterId);
+  }
 
   const statusIcons = {
     pending: <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -70,11 +75,16 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                   : 'hover:bg-accent/50'
               )}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 truncate">
                 {statusIcons[chapter.status]}
                 <span className="flex-1 truncate">{chapter.title}</span>
               </div>
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                {chapter.status !== 'completed' && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isGenerating} onClick={(e) => handleGenerateChapter(e, chapter.id)}>
+                    {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleRenameChapter(chapter.id); }}>
                   <FileEdit className="h-4 w-4" />
                 </Button>

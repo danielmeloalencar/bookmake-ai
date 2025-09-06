@@ -20,7 +20,7 @@ export function ContentEditor({ chapter, onContentChange }: ContentEditorProps) 
 
   useEffect(() => {
     setContent(chapter.content);
-  }, [chapter.content]);
+  }, [chapter.id, chapter.content]);
   
   const useDebounce = (callback: (value: string) => void, delay: number) => {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
