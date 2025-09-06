@@ -72,7 +72,11 @@ type GenerationOptions = {
   extraPrompt?: string;
   minWords?: number;
   refine?: boolean;
+  temperature?: number;
+  seed?: number;
 };
+
+type BulkGenerationOptions = Omit<GenerationOptions, 'refine'>;
 
 const ProjectContext = createContext<
   ProjectState & {
@@ -81,7 +85,7 @@ const ProjectContext = createContext<
     addChapter: (title: string) => void;
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
-    generateAllChapters: (mode: 'pending' | 'all', extraPrompt?: string) => void;
+    generateAllChapters: (mode: 'pending' | 'all', options?: BulkGenerationOptions) => void;
     generateSingleChapter: (chapterId: string, options?: GenerationOptions) => void;
     reorderChapters: (startIndex: number, endIndex: number) => void;
   }
@@ -100,7 +104,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const { toast } = useToast();
-  const { globalMinWords } = useSettings();
+  const { globalMinWords, temperature, seed } = useSettings();
 
   useEffect(() => {
     try {
@@ -189,17 +193,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[], options: GenerationOptions = {}) => {
     if (!state.project) return;
 
-    // A correct, immutable way to get previous chapters *at the time of generation*
     const getPreviousChaptersContent = () => {
-      // Find the index of the current chapter in the original list
       const currentIndex = allChapters.findIndex(c => c.id === chapter.id);
-      
-      // Get all chapters before the current one
       const previousChapters = allChapters.slice(0, currentIndex);
-      
-      // Filter for only completed ones and format
       return previousChapters
-        .filter(c => c.status === 'completed' || c.content) // Consider chapters with content as completed for context
+        .filter(c => c.status === 'completed' || c.content)
         .map(c => `## ${c.title}\n\n${c.content}`)
         .join('\n\n---\n\n');
     };
@@ -217,6 +215,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         currentContent: options.refine ? chapter.content : undefined,
         extraPrompt: options.extraPrompt,
         minWords: options.minWords ?? globalMinWords,
+        temperature: options.temperature ?? temperature,
+        seed: options.seed,
       };
       
       const result = await generateChapterContentAction(input);
@@ -230,12 +230,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           title: `Erro ao gerar capítulo "${chapter.title}"`,
           description: error.message || "Não foi possível gerar o conteúdo. Tente novamente.",
       });
-      throw error; // Re-throw to bulk generation
+      throw error;
     }
-  }, [state.project, updateChapter, toast, globalMinWords]);
+  }, [state.project, updateChapter, toast, globalMinWords, temperature, seed]);
 
 
-  const generateAllChapters = useCallback(async (mode: 'pending' | 'all', extraPrompt?: string) => {
+  const generateAllChapters = useCallback(async (mode: 'pending' | 'all', options?: BulkGenerationOptions) => {
     if (!state.project || state.isGenerating) return;
     dispatch({ type: 'START_GENERATION' });
     
@@ -258,12 +258,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     for (const chapter of chaptersToGenerate) {
       try {
-        // When using "Generate All", always generate from scratch if mode is 'all'.
-        // If mode is 'pending', only refine if content already exists.
         const refine = mode === 'all' ? false : !!chapter.content;
-        await _generateChapter(chapter, state.project.outline, { refine, extraPrompt });
+        await _generateChapter(chapter, state.project.outline, { ...options, refine });
       } catch (e) {
-        // Stop generation if one chapter fails
         toast({
           variant: "destructive",
           title: "Geração interrompida",
@@ -283,7 +280,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!chapterToGenerate) return;
 
     const hasContent = chapterToGenerate.content && chapterToGenerate.content.trim().length > 0;
-    // Default to refine if content exists, but allow override from options
     const finalOptions = { refine: hasContent, ...options };
 
 

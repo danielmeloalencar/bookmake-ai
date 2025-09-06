@@ -41,6 +41,7 @@ import { Textarea } from '../ui/textarea';
 import type { Chapter } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { useSettings } from '@/context/SettingsContext';
+import { Slider } from '../ui/slider';
 
 
 interface ChapterOutlineProps {
@@ -95,11 +96,13 @@ function RenameChapterDialog({ chapterId, currentTitle, onRename }: { chapterId:
 
 function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger: React.ReactNode }) {
   const { generateSingleChapter, isGenerating } = useProject();
-  const { globalMinWords } = useSettings();
+  const { globalMinWords, temperature, seed } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState('');
   const [minWords, setMinWords] = useState<number | undefined>(undefined);
   const [refineContent, setRefineContent] = useState(true);
+  const [localTemp, setLocalTemp] = useState(temperature);
+  const [localSeed, setLocalSeed] = useState<number | undefined>(seed);
   
   const hasContent = chapter.content && chapter.content.trim().length > 0;
 
@@ -107,21 +110,20 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
     generateSingleChapter(chapter.id, { 
       extraPrompt, 
       minWords: minWords ?? globalMinWords, 
-      refine: hasContent ? refineContent : false 
+      refine: hasContent ? refineContent : false,
+      temperature: localTemp,
+      seed: localSeed,
     });
     setIsOpen(false);
-    // Reset local state
-    setExtraPrompt('');
-    setMinWords(undefined);
-    setRefineContent(true);
   }
 
   const handleOpenChange = (open: boolean) => {
     if(open) {
-      // Reset state when opening
       setExtraPrompt('');
       setMinWords(undefined);
       setRefineContent(true);
+      setLocalTemp(temperature);
+      setLocalSeed(seed);
     }
     setIsOpen(open);
   }
@@ -129,11 +131,11 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
   return (
      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{trigger}</DialogTrigger>
-      <DialogContent onClick={(e) => e.stopPropagation()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Gerar conteúdo para: {chapter.title}</DialogTitle>
         </DialogHeader>
-        <div className="py-4 space-y-4">
+        <div className="py-4 grid gap-4">
           {hasContent && (
              <div className="flex items-center space-x-2">
                 <Switch 
@@ -144,7 +146,7 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
                 <Label htmlFor="refine-mode">Refinar conteúdo existente</Label>
               </div>
           )}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="extra-prompt">
               {hasContent && refineContent ? 'Instruções Adicionais (Opcional)' : 'Prompt (Opcional)'}
             </Label>
@@ -156,18 +158,45 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
                 ? "Ex: Torne o tom mais formal, citando exemplos práticos."
                 : "Ex: Comece o capítulo com uma citação sobre exploração espacial."
               }
-              rows={4}
+              rows={3}
             />
           </div>
-           <div>
+           <div className="space-y-2">
             <Label htmlFor="min-words">Mínimo de Palavras (Opcional)</Label>
             <Input
               id="min-words"
               type="number"
               value={minWords || ''}
               onChange={(e) => setMinWords(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder={`Padrão: ${globalMinWords || 'N/A'}`}
+              placeholder={`Padrão global: ${globalMinWords || 'N/A'}`}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="temperature">Temperatura: {localTemp.toFixed(1)}</Label>
+            <Slider
+                id="temperature"
+                min={0}
+                max={1}
+                step={0.1}
+                value={[localTemp]}
+                onValueChange={(value) => setLocalTemp(value[0])}
+            />
+             <p className="text-sm text-muted-foreground">
+                Valores mais altos = mais criatividade.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="seed">Seed (Opcional)</Label>
+             <Input
+              id="seed"
+              type="number"
+              value={localSeed || ''}
+              onChange={(e) => setLocalSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder={`Padrão global: ${seed || 'Aleatório'}`}
+            />
+             <p className="text-sm text-muted-foreground">
+                Gera resultados consistentes para a mesma seed.
+            </p>
           </div>
         </div>
         <DialogFooter>

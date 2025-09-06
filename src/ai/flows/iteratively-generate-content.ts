@@ -24,6 +24,8 @@ const GenerateChapterContentInputSchema = z.object({
   currentContent: z.string().optional().describe('The existing content of the chapter to be refined or modified.'),
   extraPrompt: z.string().optional().describe('Extra instructions or prompt to guide content generation/modification.'),
   minWords: z.number().optional().describe('The minimum number of words for the generated content.'),
+  temperature: z.number().optional().describe('Controls randomness. Higher values increase creativity.'),
+  seed: z.number().optional().describe('A seed for deterministic generation.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -87,8 +89,11 @@ const generateChapterContentFlow = ai.defineFlow(
     inputSchema: GenerateChapterContentInputSchema,
     outputSchema: GenerateChapterContentOutputSchema,
   },
-  async input => {
-    const {output} = await generateChapterContentPrompt(input, { temperature: 0.9 });
+  async (input) => {
+    const {output} = await generateChapterContentPrompt(input, {
+      temperature: input.temperature,
+      seed: input.seed,
+    });
     return output!;
   }
 );
