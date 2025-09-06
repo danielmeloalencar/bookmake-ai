@@ -250,16 +250,14 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                 <span className="flex-1 truncate">{chapter.title}</span>
               </div>
               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                {chapter.status !== 'completed' && (
-                   <GenerateChapterDialog 
-                    chapter={chapter}
-                    trigger={
-                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isGenerating}>
-                        {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
-                      </Button>
-                    }
-                  />
-                )}
+                <GenerateChapterDialog 
+                  chapter={chapter}
+                  trigger={
+                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isGenerating && chapter.status === 'generating'}>
+                      {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
+                    </Button>
+                  }
+                />
                 <RenameChapterDialog chapterId={chapter.id} currentTitle={chapter.title} onRename={handleRenameChapter} />
 
                 <AlertDialog>
