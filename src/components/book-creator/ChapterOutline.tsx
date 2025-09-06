@@ -54,22 +54,28 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragEnter = (index: number) => {
-    if (draggedIndex === null) return;
-    setDropIndex(index);
+  const handleDragOver = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) {
+      setDropIndex(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isAfter = e.clientY > rect.top + rect.height / 2;
+
+    setDropIndex(isAfter ? index + 1 : index);
   };
   
-  const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
-    e.preventDefault(); 
-  };
-
-  const handleDrop = () => {
-    if (draggedIndex === null || dropIndex === null || draggedIndex === dropIndex) {
-        handleDragEnd();
-        return;
-    };
+  const handleDrop = (e: React.DragEvent<HTMLLIElement>) => {
+    e.preventDefault();
+    if (draggedIndex === null || dropIndex === null) return;
     
-    reorderChapters(draggedIndex, dropIndex);
+    // Adjust drop index if dragging downwards
+    const adjustedDropIndex = draggedIndex < dropIndex ? dropIndex -1 : dropIndex;
+
+    if (draggedIndex !== adjustedDropIndex) {
+      reorderChapters(draggedIndex, adjustedDropIndex);
+    }
     handleDragEnd();
   };
 
@@ -77,6 +83,14 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
     setDraggedIndex(null);
     setDropIndex(null);
   };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLIElement>) => {
+     // Check if the new target is outside the list container
+     if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
+        setDropIndex(null);
+    }
+  };
+
 
   const statusIcons = {
     pending: <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -97,23 +111,22 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
       </div>
       <ul 
         className="space-y-1"
-        onDragLeave={handleDragEnd}
+        onDrop={handleDrop}
+        onDragLeave={handleDragLeave}
+        onDragEnd={handleDragEnd}
       >
         {project.outline.map((chapter, index) => (
           <li 
             key={chapter.id}
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnter={() => handleDragEnter(index)}
-            onDragEnd={handleDragEnd}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
+            onDragOver={(e) => handleDragOver(e, index)}
             className={cn(
-              'relative transition-all',
-              draggedIndex === index && 'opacity-50 scale-95',
+              'relative transition-all list-none',
+              draggedIndex === index && 'opacity-50',
             )}
           >
-            {dropIndex === index && draggedIndex !== null && index < draggedIndex && (
+            {dropIndex === index && draggedIndex !== null && (
               <div className="absolute -top-1 left-0 right-0 h-1 bg-primary rounded-full z-10" />
             )}
              <div
@@ -161,7 +174,7 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                 </AlertDialog>
               </div>
             </div>
-             {dropIndex === index && draggedIndex !== null && index > draggedIndex && (
+             {dropIndex === index + 1 && draggedIndex !== null && (
                 <div className="absolute -bottom-1 left-0 right-0 h-1 bg-primary rounded-full z-10" />
               )}
           </li>
