@@ -7,6 +7,7 @@ import { createOutlineAction, generateChapterContentAction } from '@/lib/actions
 import { useToast } from "@/hooks/use-toast"
 import { nanoid } from 'nanoid';
 import { GenerateChapterContentInput } from '@/ai/flows/iteratively-generate-content';
+import { useSettings } from './SettingsContext';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -99,6 +100,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const { toast } = useToast();
+  const { globalMinWords } = useSettings();
 
   useEffect(() => {
     try {
@@ -204,7 +206,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         previousChaptersContent: previousChaptersContent,
         currentContent: options.refine ? chapter.content : undefined,
         extraPrompt: options.extraPrompt,
-        minWords: options.minWords,
+        minWords: options.minWords ?? globalMinWords,
       };
       
       const result = await generateChapterContentAction(input);
@@ -220,7 +222,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       });
       throw error; // Re-throw to bulk generation
     }
-  }, [state.project, updateChapter, toast]);
+  }, [state.project, updateChapter, toast, globalMinWords]);
 
 
   const generateAllChapters = useCallback(async () => {
@@ -231,6 +233,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     for (const chapter of chaptersToGenerate) {
       try {
+        // Always generate from scratch when using "Generate All"
         await _generateChapter(chapter, state.project.outline, { refine: false });
       } catch (e) {
         break; // Stop generation if one chapter fails

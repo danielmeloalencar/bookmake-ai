@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from '../ui/textarea';
 import type { Chapter } from '@/lib/types';
 import { Switch } from '../ui/switch';
+import { useSettings } from '@/context/SettingsContext';
 
 
 interface ChapterOutlineProps {
@@ -94,20 +95,39 @@ function RenameChapterDialog({ chapterId, currentTitle, onRename }: { chapterId:
 
 function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger: React.ReactNode }) {
   const { generateSingleChapter, isGenerating } = useProject();
+  const { globalMinWords } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState('');
   const [minWords, setMinWords] = useState<number | undefined>(undefined);
   const [refineContent, setRefineContent] = useState(true);
-
-  const handleGenerate = () => {
-    generateSingleChapter(chapter.id, { extraPrompt, minWords, refine: refineContent });
-    setIsOpen(false);
-  }
   
   const hasContent = chapter.content && chapter.content.trim().length > 0;
 
+  const handleGenerate = () => {
+    generateSingleChapter(chapter.id, { 
+      extraPrompt, 
+      minWords: minWords ?? globalMinWords, 
+      refine: hasContent ? refineContent : false 
+    });
+    setIsOpen(false);
+    // Reset local state
+    setExtraPrompt('');
+    setMinWords(undefined);
+    setRefineContent(true);
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if(open) {
+      // Reset state when opening
+      setExtraPrompt('');
+      setMinWords(undefined);
+      setRefineContent(true);
+    }
+    setIsOpen(open);
+  }
+
   return (
-     <Dialog open={isOpen} onOpenChange={setIsOpen}>
+     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{trigger}</DialogTrigger>
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
@@ -126,13 +146,13 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
           )}
           <div>
             <Label htmlFor="extra-prompt">
-              {refineContent && hasContent ? 'Instruções Adicionais (Opcional)' : 'Prompt (Opcional)'}
+              {hasContent && refineContent ? 'Instruções Adicionais (Opcional)' : 'Prompt (Opcional)'}
             </Label>
             <Textarea 
               id="extra-prompt"
               value={extraPrompt}
               onChange={(e) => setExtraPrompt(e.target.value)}
-              placeholder={refineContent && hasContent 
+              placeholder={hasContent && refineContent
                 ? "Ex: Torne o tom mais formal, citando exemplos práticos."
                 : "Ex: Comece o capítulo com uma citação sobre exploração espacial."
               }
@@ -146,7 +166,7 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
               type="number"
               value={minWords || ''}
               onChange={(e) => setMinWords(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder="Ex: 500"
+              placeholder={`Padrão: ${globalMinWords || 'N/A'}`}
             />
           </div>
         </div>

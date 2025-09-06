@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { SettingsModal } from './SettingsModal';
 
 export function TopBar() {
   const { project, resetProject, generateAllChapters, isGenerating } = useProject();
@@ -88,6 +89,7 @@ export function TopBar() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <SettingsModal />
       </div>
     </header>
   );
