@@ -48,9 +48,6 @@ const generateChapterContentPrompt = ai.definePrompt({
   name: 'generateChapterContentPrompt',
   input: {schema: GenerateChapterContentInputSchema},
   output: {schema: GenerateChapterContentOutputSchema},
-  config: {
-    temperature: 0.8,
-  },
   prompt: `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
 
 Do not add chapter numbering in the content, just the text itself.
@@ -91,7 +88,7 @@ const generateChapterContentFlow = ai.defineFlow(
     outputSchema: GenerateChapterContentOutputSchema,
   },
   async input => {
-    const {output} = await generateChapterContentPrompt(input);
+    const {output} = await generateChapterContentPrompt(input, { temperature: 0.9 });
     return output!;
   }
 );
