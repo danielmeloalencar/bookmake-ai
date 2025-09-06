@@ -81,7 +81,7 @@ const ProjectContext = createContext<
     addChapter: (title: string) => void;
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
-    generateAllChapters: () => void;
+    generateAllChapters: (mode: 'pending' | 'all') => void;
     generateSingleChapter: (chapterId: string, options?: GenerationOptions) => void;
     reorderChapters: (startIndex: number, endIndex: number) => void;
   }
@@ -189,10 +189,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[], options: GenerationOptions = {}) => {
     if (!state.project) return;
 
-    const previousChaptersContent = allChapters
-        .filter(c => c.status === 'completed' && c.id !== chapter.id)
+    // A correct, immutable way to get previous chapters *at the time of generation*
+    const getPreviousChaptersContent = () => {
+      // Find the index of the current chapter in the original list
+      const currentIndex = allChapters.findIndex(c => c.id === chapter.id);
+      
+      // Get all chapters before the current one
+      const previousChapters = allChapters.slice(0, currentIndex);
+      
+      // Filter for only completed ones and format
+      return previousChapters
+        .filter(c => c.status === 'completed' || c.content) // Consider chapters with content as completed for context
         .map(c => `## ${c.title}\n\n${c.content}`)
         .join('\n\n---\n\n');
+    };
 
     updateChapter(chapter.id, { status: 'generating' });
 
@@ -203,7 +213,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         language: state.project.language,
         difficultyLevel: state.project.difficultyLevel,
         chapterOutline: `Título: ${chapter.title}\nSubtópicos: ${chapter.subchapters.join(', ')}`,
-        previousChaptersContent: previousChaptersContent,
+        previousChaptersContent: getPreviousChaptersContent(),
         currentContent: options.refine ? chapter.content : undefined,
         extraPrompt: options.extraPrompt,
         minWords: options.minWords ?? globalMinWords,
@@ -225,23 +235,45 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [state.project, updateChapter, toast, globalMinWords]);
 
 
-  const generateAllChapters = useCallback(async () => {
+  const generateAllChapters = useCallback(async (mode: 'pending' | 'all') => {
     if (!state.project || state.isGenerating) return;
     dispatch({ type: 'START_GENERATION' });
     
-    const chaptersToGenerate = state.project.outline.filter(c => c.status !== 'completed');
+    let chaptersToGenerate: Chapter[];
+
+    if (mode === 'all') {
+      chaptersToGenerate = state.project.outline;
+    } else {
+      chaptersToGenerate = state.project.outline.filter(c => c.status !== 'completed');
+    }
+
+    if (chaptersToGenerate.length === 0) {
+      toast({
+        title: "Nenhum capítulo para gerar",
+        description: "Todos os capítulos já foram concluídos.",
+      });
+      dispatch({ type: 'END_GENERATION' });
+      return;
+    }
 
     for (const chapter of chaptersToGenerate) {
       try {
-        // Always generate from scratch when using "Generate All"
-        await _generateChapter(chapter, state.project.outline, { refine: false });
+        // When using "Generate All", always generate from scratch unless it's a 'pending' run and the chapter already has content
+        const refine = mode === 'pending' && !!chapter.content;
+        await _generateChapter(chapter, state.project.outline, { refine });
       } catch (e) {
-        break; // Stop generation if one chapter fails
+        // Stop generation if one chapter fails
+        toast({
+          variant: "destructive",
+          title: "Geração interrompida",
+          description: "A geração de todos os capítulos foi interrompida devido a um erro.",
+        });
+        break; 
       }
     }
     
     dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter]);
+  }, [state.project, state.isGenerating, _generateChapter, toast]);
 
   const generateSingleChapter = useCallback(async (chapterId: string, options?: GenerationOptions) => {
     if (!state.project || state.isGenerating) return;
@@ -250,6 +282,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!chapterToGenerate) return;
 
     const hasContent = chapterToGenerate.content && chapterToGenerate.content.trim().length > 0;
+    // Default to refine if content exists, but allow override from options
     const finalOptions = { refine: hasContent, ...options };
 
 

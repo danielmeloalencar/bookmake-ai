@@ -1,10 +1,10 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useProject } from '@/context/ProjectContext';
 import { Button } from '@/components/ui/button';
 import {
-  Book,
   Download,
   FilePlus2,
   Loader2,
@@ -33,10 +33,18 @@ import { SettingsModal } from './SettingsModal';
 
 export function TopBar() {
   const { project, resetProject, generateAllChapters, isGenerating } = useProject();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
 
   if (!project) return null;
 
-  const isGenerationComplete = project.outline.every(c => c.status === 'completed');
+  const handleGenerateClick = (mode: 'pending' | 'all') => {
+    generateAllChapters(mode);
+    setIsGenerateDialogOpen(false);
+  };
+
+  const pendingChaptersCount = project.outline.filter(c => c.status !== 'completed').length;
+  const isGenerationComplete = pendingChaptersCount === 0;
 
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card">
@@ -47,7 +55,7 @@ export function TopBar() {
         </h1>
       </div>
       <div className="flex items-center gap-2">
-         <AlertDialog>
+         <AlertDialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
           <AlertDialogTrigger asChild>
             <Button disabled={isGenerating || isGenerationComplete}>
               {isGenerating ? (
@@ -60,15 +68,21 @@ export function TopBar() {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Gerar conteúdo para todos os capítulos pendentes?</AlertDialogTitle>
+              <AlertDialogTitle>Como você gostaria de gerar o conteúdo?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação gerará conteúdo para todos os capítulos que ainda não foram concluídos. 
-                Qualquer conteúdo existente nesses capítulos pendentes será substituído. Os capítulos já concluídos não serão afetados.
+                Você pode gerar conteúdo apenas para os capítulos que ainda não foram concluídos ou para todos os capítulos, substituindo o que já existe.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={generateAllChapters}>Confirmar e Gerar</AlertDialogAction>
+            <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+               <Button onClick={() => handleGenerateClick('pending')} disabled={pendingChaptersCount === 0}>
+                Gerar somente capítulos pendentes ({pendingChaptersCount})
+              </Button>
+              <Button variant="outline" onClick={() => handleGenerateClick('all')}>
+                Gerar para todos os capítulos (sobrescrever)
+              </Button>
+              <AlertDialogCancel asChild>
+                 <Button variant="ghost">Cancelar</Button>
+              </AlertDialogCancel>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -87,7 +101,7 @@ export function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AlertDialog>
+        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
           <AlertDialogTrigger asChild>
             <Button variant="destructive">
               <FilePlus2 className="mr-2 h-4 w-4" />
@@ -103,7 +117,7 @@ export function TopBar() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={resetProject}>Criar Novo</AlertDialogAction>
+              <AlertDialogAction onClick={() => { resetProject(); setIsResetDialogOpen(false); }}>Criar Novo</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
