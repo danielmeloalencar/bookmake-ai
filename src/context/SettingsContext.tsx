@@ -1,3 +1,4 @@
+
 // src/context/SettingsContext.tsx
 'use client';
 
