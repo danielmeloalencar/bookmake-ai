@@ -6,6 +6,7 @@ import type { BookProject, Chapter } from '@/lib/types';
 import { createOutlineAction, generateChapterContentAction } from '@/lib/actions';
 import { useToast } from "@/hooks/use-toast"
 import { nanoid } from 'nanoid';
+import { GenerateChapterContentInput } from '@/ai/flows/iteratively-generate-content';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -66,6 +67,11 @@ function projectReducer(state: ProjectState, action: Action): ProjectState {
   }
 }
 
+type GenerationOptions = {
+  extraPrompt?: string;
+  minWords?: number;
+};
+
 const ProjectContext = createContext<
   ProjectState & {
     createNewProject: (data: CreateProjectData) => void;
@@ -74,7 +80,7 @@ const ProjectContext = createContext<
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
     generateAllChapters: () => void;
-    generateSingleChapter: (chapterId: string) => void;
+    generateSingleChapter: (chapterId: string, options?: GenerationOptions) => void;
     reorderChapters: (startIndex: number, endIndex: number) => void;
   }
 >({
@@ -177,7 +183,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const resetProject = () => dispatch({ type: 'RESET_PROJECT' });
 
-  const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[]) => {
+  const _generateChapter = useCallback(async (chapter: Chapter, allChapters: Chapter[], options: GenerationOptions = {}) => {
     if (!state.project) return;
 
     const previousChaptersContent = allChapters
@@ -188,14 +194,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     updateChapter(chapter.id, { status: 'generating' });
 
     try {
-      const result = await generateChapterContentAction({
+      const input: GenerateChapterContentInput = {
         bookDescription: state.project.bookDescription,
         targetAudience: state.project.targetAudience,
         language: state.project.language,
         difficultyLevel: state.project.difficultyLevel,
         chapterOutline: `Título: ${chapter.title}\nSubtópicos: ${chapter.subchapters.join(', ')}`,
         previousChaptersContent: previousChaptersContent,
-      });
+        extraPrompt: options.extraPrompt,
+        minWords: options.minWords,
+      };
+      
+      const result = await generateChapterContentAction(input);
       
       updateChapter(chapter.id, { content: result.chapterContent, status: 'completed' });
     } catch (error: any) {
@@ -214,7 +224,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const generateAllChapters = useCallback(async () => {
     if (!state.project || state.isGenerating) return;
     dispatch({ type: 'START_GENERATION' });
-    updateProject({status: 'generating'});
     
     const chaptersToGenerate = state.project.outline.filter(c => c.status !== 'completed');
 
@@ -226,11 +235,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
     }
     
-    updateProject({status: 'editing'});
     dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter, updateProject]);
+  }, [state.project, state.isGenerating, _generateChapter]);
 
-  const generateSingleChapter = useCallback(async (chapterId: string) => {
+  const generateSingleChapter = useCallback(async (chapterId: string, options?: GenerationOptions) => {
     if (!state.project || state.isGenerating) return;
     
     const chapterToGenerate = state.project.outline.find(c => c.id === chapterId);
@@ -238,7 +246,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     dispatch({ type: 'START_GENERATION' });
     try {
-      await _generateChapter(chapterToGenerate, state.project.outline);
+      await _generateChapter(chapterToGenerate, state.project.outline, options);
     } catch(e) {
       // Error is already handled in _generateChapter
     } finally {

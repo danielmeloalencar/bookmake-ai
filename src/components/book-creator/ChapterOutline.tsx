@@ -37,6 +37,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from '../ui/textarea';
+import type { Chapter } from '@/lib/types';
 
 
 interface ChapterOutlineProps {
@@ -89,8 +91,60 @@ function RenameChapterDialog({ chapterId, currentTitle, onRename }: { chapterId:
   )
 }
 
+function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger: React.ReactNode }) {
+  const { generateSingleChapter, isGenerating } = useProject();
+  const [isOpen, setIsOpen] = useState(false);
+  const [extraPrompt, setExtraPrompt] = useState('');
+  const [minWords, setMinWords] = useState<number | undefined>(undefined);
+
+  const handleGenerate = () => {
+    generateSingleChapter(chapter.id, { extraPrompt, minWords });
+    setIsOpen(false);
+  }
+
+  return (
+     <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{trigger}</DialogTrigger>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Gerar conteúdo para: {chapter.title}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div>
+            <Label htmlFor="extra-prompt">Prompt Adicional (Opcional)</Label>
+            <Textarea 
+              id="extra-prompt"
+              value={extraPrompt}
+              onChange={(e) => setExtraPrompt(e.target.value)}
+              placeholder="Ex: Escreva em um tom mais formal, citando exemplos práticos."
+              rows={4}
+            />
+          </div>
+           <div>
+            <Label htmlFor="min-words">Mínimo de Palavras (Opcional)</Label>
+            <Input
+              id="min-words"
+              type="number"
+              value={minWords || ''}
+              onChange={(e) => setMinWords(e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="Ex: 500"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancelar</Button>
+          <Button onClick={handleGenerate} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>}
+            Gerar Conteúdo
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+     </Dialog>
+  )
+}
+
 export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutlineProps) {
-  const { project, addChapter, deleteChapter, updateChapter, generateSingleChapter, isGenerating, reorderChapters } = useProject();
+  const { project, addChapter, deleteChapter, updateChapter, isGenerating, reorderChapters } = useProject();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
@@ -99,11 +153,6 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
       updateChapter(id, { title: newTitle });
     }
   };
-
-  const handleGenerateChapter = (e: React.MouseEvent, chapterId: string) => {
-    e.stopPropagation();
-    generateSingleChapter(chapterId);
-  }
 
   const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
     setDraggedIndex(index);
@@ -202,9 +251,14 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
               </div>
               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                 {chapter.status !== 'completed' && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isGenerating} onClick={(e) => handleGenerateChapter(e, chapter.id)}>
-                    {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
-                  </Button>
+                   <GenerateChapterDialog 
+                    chapter={chapter}
+                    trigger={
+                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isGenerating}>
+                        {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
+                      </Button>
+                    }
+                  />
                 )}
                 <RenameChapterDialog chapterId={chapter.id} currentTitle={chapter.title} onRename={handleRenameChapter} />
 

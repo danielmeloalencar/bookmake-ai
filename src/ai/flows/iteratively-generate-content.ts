@@ -21,6 +21,8 @@ const GenerateChapterContentInputSchema = z.object({
   chapterOutline: z.string().describe('The outline for the current chapter, including subchapters.'),
   previousChaptersContent: z.string().describe('The content of the previous chapters.'),
   difficultyLevel: z.string().describe('The target difficulty level of the book.'),
+  extraPrompt: z.string().optional().describe('Extra instructions or prompt to guide content generation.'),
+  minWords: z.number().optional().describe('The minimum number of words for the generated content.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -57,6 +59,14 @@ Difficulty Level: {{{difficultyLevel}}}
 Previous Chapters Content: {{{previousChaptersContent}}}
 
 Current Chapter Outline: {{{chapterOutline}}}
+
+{{#if extraPrompt}}
+Additional Instructions: {{{extraPrompt}}}
+{{/if}}
+
+{{#if minWords}}
+The chapter content should have at least {{{minWords}}} words.
+{{/if}}
 
 Generate the content for the current chapter based on the outline. The content should be well-written, engaging, and consistent with the overall book narrative.`,
 });
