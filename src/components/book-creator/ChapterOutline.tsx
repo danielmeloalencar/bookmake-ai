@@ -26,10 +26,67 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 
 interface ChapterOutlineProps {
   activeChapterId: string | null;
   onSelectChapter: (id: string) => void;
+}
+
+function RenameChapterDialog({ chapterId, currentTitle, onRename }: { chapterId: string, currentTitle: string, onRename: (id: string, newTitle: string) => void }) {
+  const [newTitle, setNewTitle] = useState(currentTitle);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSave = () => {
+    if (newTitle.trim()) {
+      onRename(chapterId, newTitle.trim());
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setNewTitle(currentTitle); setIsOpen(true) }}>
+          <FileEdit className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Renomear Capítulo</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <Label htmlFor="chapter-title" className="sr-only">
+            Título do Capítulo
+          </Label>
+          <Input
+            id="chapter-title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            autoFocus
+          />
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
+          <Button onClick={handleSave}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutlineProps) {
@@ -37,8 +94,7 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
-  const handleRenameChapter = (id: string) => {
-    const newTitle = prompt("Digite o novo título do capítulo:");
+  const handleRenameChapter = (id: string, newTitle: string) => {
     if (newTitle) {
       updateChapter(id, { title: newTitle });
     }
@@ -150,9 +206,8 @@ export function ChapterOutline({ activeChapterId, onSelectChapter }: ChapterOutl
                     {chapter.status === 'generating' ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4" />}
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleRenameChapter(chapter.id); }}>
-                  <FileEdit className="h-4 w-4" />
-                </Button>
+                <RenameChapterDialog chapterId={chapter.id} currentTitle={chapter.title} onRename={handleRenameChapter} />
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => e.stopPropagation()}>
