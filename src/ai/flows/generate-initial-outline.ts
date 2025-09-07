@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateInitialOutlineInputSchema = z.object({
   bookDescription: z.string().describe('A description of the book.'),
@@ -19,6 +20,7 @@ const GenerateInitialOutlineInputSchema = z.object({
   numberOfChapters: z
     .number()
     .describe('The desired number of chapters in the book.'),
+  modelName: z.string().optional().describe('The name of the model to use.'),
 });
 export type GenerateInitialOutlineInput = z.infer<
   typeof GenerateInitialOutlineInputSchema
@@ -48,31 +50,35 @@ export async function generateInitialOutline(
   return generateInitialOutlineFlow(input);
 }
 
-const generateInitialOutlinePrompt = ai.definePrompt({
-  name: 'generateInitialOutlinePrompt',
-  input: {schema: GenerateInitialOutlineInputSchema},
-  output: {schema: GenerateInitialOutlineOutputSchema},
-  prompt: `You are an AI assistant helping a user create a book outline.
-
-  Based on the following information, generate an outline for the book, including chapter titles and subchapters. The number of chapters is a suggestion and you can deviate from it if needed.
-
-  Book Description: {{{bookDescription}}}
-  Target Audience: {{{targetAudience}}}
-  Language: {{{language}}}
-  Difficulty Level: {{{difficultyLevel}}}
-  Number of Chapters: {{{numberOfChapters}}}
-
-  Outline:`,
-});
-
 const generateInitialOutlineFlow = ai.defineFlow(
   {
     name: 'generateInitialOutlineFlow',
     inputSchema: GenerateInitialOutlineInputSchema,
     outputSchema: GenerateInitialOutlineOutputSchema,
   },
-  async input => {
-    const {output} = await generateInitialOutlinePrompt(input);
+  async ({modelName, ...promptData}) => {
+    const model = modelName
+      ? ai.model(modelName)
+      : googleAI.model('gemini-1.5-flash');
+
+    const prompt = ai.definePrompt({
+      name: 'generateInitialOutlinePrompt',
+      input: {schema: z.any()},
+      output: {schema: GenerateInitialOutlineOutputSchema},
+      prompt: `You are an AI assistant helping a user create a book outline.
+
+        Based on the following information, generate an outline for the book, including chapter titles and subchapters. The number of chapters is a suggestion and you can deviate from it if needed.
+
+        Book Description: {{{bookDescription}}}
+        Target Audience: {{{targetAudience}}}
+        Language: {{{language}}}
+        Difficulty Level: {{{difficultyLevel}}}
+        Number of Chapters: {{{numberOfChapters}}}
+
+        Outline:`,
+    });
+
+    const {output} = await prompt(promptData, {model});
     return output!;
   }
 );

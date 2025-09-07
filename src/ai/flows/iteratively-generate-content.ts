@@ -13,6 +13,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import Handlebars from 'handlebars';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateChapterContentInputSchema = z.object({
   bookDescription: z.string().describe('A high-level description of the book.'),
@@ -46,6 +47,7 @@ const GenerateChapterContentInputSchema = z.object({
     .optional()
     .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
+  modelName: z.string().optional().describe('The name of the model to use.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -106,12 +108,16 @@ const generateChapterContentFlow = ai.defineFlow(
     inputSchema: GenerateChapterContentInputSchema,
     outputSchema: GenerateChapterContentOutputSchema,
   },
-  async input => {
+  async ({modelName, ...input}) => {
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
+    const model = modelName
+      ? ai.model(modelName)
+      : googleAI.model('gemini-1.5-flash');
 
     const {output} = await ai.generate({
       prompt: finalPrompt,
+      model,
       output: {
         schema: GenerateChapterContentOutputSchema,
       },
