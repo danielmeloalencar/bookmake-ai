@@ -27,6 +27,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '../icons';
+import { SettingsModal } from './SettingsModal';
 
 const formSchema = z.object({
   bookDescription: z.string().min(10, { message: 'A descrição deve ter pelo menos 10 caracteres.' }),
@@ -56,8 +57,11 @@ export function InitialForm() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-2xl relative">
+        <div className="absolute top-4 right-4">
+            <SettingsModal />
+        </div>
+        <CardHeader className="text-center pt-12">
           <div className="flex justify-center items-center gap-3 mb-4">
              <Logo className="h-10 w-10 text-primary" />
              <CardTitle className="text-3xl font-headline">LivroMágico AI</CardTitle>
