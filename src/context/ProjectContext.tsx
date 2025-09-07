@@ -147,7 +147,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
       
-      const modelName = serializableSettings.aiProvider === 'ollama' ? `ollama/${serializableSettings.ollamaModel}` : 'gemini-1.5-flash';
+      const modelName = serializableSettings.aiProvider === 'ollama' ? `ollama/${serializableSettings.ollamaModel}` : 'qwen3:8b';
       
       const actionInput: GenerateInitialOutlineInput = {
         ...data,

@@ -15,7 +15,7 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
   const plugins: Plugin[] = [];
 
   const {
-    aiProvider = 'google',
+    aiProvider = 'ollama',
     ollamaHost,
     ollamaModel,
   } = config;

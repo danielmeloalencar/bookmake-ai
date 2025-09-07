@@ -39,10 +39,10 @@ const getInitialState = (): Settings => {
   }
   // Default state
   return {
-    theme: 'light',
+    theme: 'dark',
     aiProvider: 'google',
     ollamaHost: 'http://127.0.0.1:11434',
-    ollamaModel: 'gemma',
+    ollamaModel: 'qwen3:8b',
   };
 };
 
