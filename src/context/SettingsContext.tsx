@@ -10,8 +10,6 @@ import {
   useCallback,
 } from 'react';
 import type {McpConfig, Settings} from '@/lib/types';
-import { getMcpHost, shutdownMcpHost } from '@/ai/mcp-host';
-
 
 type SettingsContextType = Settings & {
   setTheme: (theme: 'light' | 'dark') => void;
@@ -68,18 +66,7 @@ export function SettingsProvider({children}: {children: ReactNode}) {
   // Save settings to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('livromagico_settings', JSON.stringify(settings));
-    // Re-initialize MCP host with new config
-    getMcpHost(settings.mcp);
   }, [settings]);
-
-  useEffect(() => {
-      // Ensure MCP host is initialized on mount
-      getMcpHost(settings.mcp);
-      // And shut down when the app unmounts
-      return () => {
-        shutdownMcpHost();
-      }
-  }, [settings.mcp]);
 
   const setTheme = useCallback((theme: 'light' | 'dark') => {
     setSettings(s => ({...s, theme}));
