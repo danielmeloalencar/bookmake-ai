@@ -76,8 +76,6 @@ type GenerationOptions = {
   seed?: number;
 };
 
-type BulkGenerationOptions = Omit<GenerationOptions, 'refine'>;
-
 const ProjectContext = createContext<
   ProjectState & {
     createNewProject: (data: CreateProjectData) => void;
@@ -85,7 +83,6 @@ const ProjectContext = createContext<
     addChapter: (title: string) => void;
     deleteChapter: (chapterId: string) => void;
     resetProject: () => void;
-    generateAllChapters: (mode: 'pending' | 'all', options?: BulkGenerationOptions) => void;
     generateSingleChapter: (chapterId: string, options?: GenerationOptions) => void;
     reorderChapters: (startIndex: number, endIndex: number) => void;
   }
@@ -96,7 +93,6 @@ const ProjectContext = createContext<
   addChapter: () => {},
   deleteChapter: () => {},
   resetProject: () => {},
-  generateAllChapters: () => {},
   generateSingleChapter: () => {},
   reorderChapters: () => {},
 });
@@ -235,46 +231,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [state.project, updateChapter, toast, globalMinWords, temperature, seed]);
 
 
-  const generateAllChapters = useCallback(async (mode: 'pending' | 'all', options?: BulkGenerationOptions) => {
-    if (!state.project || state.isGenerating) return;
-    dispatch({ type: 'START_GENERATION' });
-    
-    let chaptersToGenerate: Chapter[];
-
-    if (mode === 'all') {
-      chaptersToGenerate = state.project.outline;
-    } else {
-      chaptersToGenerate = state.project.outline.filter(c => c.status !== 'completed');
-    }
-
-    if (chaptersToGenerate.length === 0) {
-      toast({
-        title: "Nenhum capítulo para gerar",
-        description: "Todos os capítulos já foram concluídos.",
-      });
-      dispatch({ type: 'END_GENERATION' });
-      return;
-    }
-
-    for (const chapter of chaptersToGenerate) {
-      try {
-        const refine = mode === 'all' ? false : !!chapter.content;
-        await _generateChapter(chapter, state.project.outline, { ...options, refine });
-        // Adiciona um atraso de 2 segundos para evitar o erro 429 (Too Many Requests)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (e) {
-        toast({
-          variant: "destructive",
-          title: "Geração interrompida",
-          description: "A geração de todos os capítulos foi interrompida devido a um erro.",
-        });
-        break; 
-      }
-    }
-    
-    dispatch({ type: 'END_GENERATION' });
-  }, [state.project, state.isGenerating, _generateChapter, toast]);
-
   const generateSingleChapter = useCallback(async (chapterId: string, options?: GenerationOptions) => {
     if (!state.project || state.isGenerating) return;
     
@@ -297,7 +253,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
 
   return (
-    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateAllChapters, generateSingleChapter, reorderChapters }}>
+    <ProjectContext.Provider value={{ ...state, createNewProject, updateChapter, addChapter, deleteChapter, resetProject, generateSingleChapter, reorderChapters }}>
       {children}
     </ProjectContext.Provider>
   );
