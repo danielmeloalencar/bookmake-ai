@@ -17,7 +17,7 @@ import {useToast} from '@/hooks/use-toast';
 import {nanoid} from 'nanoid';
 import {GenerateChapterContentInput} from '@/ai/flows/iteratively-generate-content';
 import {useSettings} from './SettingsContext';
-import { GenerateInitialOutlineInput } from '@/ai/flows/generate-initial-outline';
+import {GenerateInitialOutlineInput} from '@/ai/flows/generate-initial-outline';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -117,7 +117,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const settings = useSettings();
+  const { theme, ...settings } = useSettings();
 
   useEffect(() => {
     try {
@@ -139,13 +139,19 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
   const createNewProject = useCallback(
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
+
+      let modelName = 'gemini-1.5-flash';
+      if (settings.aiProvider === 'ollama' && settings.ollamaModel) {
+        modelName = `ollama/${settings.ollamaModel}`;
+      }
       
       const actionInput: GenerateInitialOutlineInput = {
         ...data,
+        modelName,
       };
 
       try {
-        const result = await createOutlineAction(actionInput);
+        const result = await createOutlineAction(actionInput, settings);
         const newProject: BookProject = {
           ...data,
           id: nanoid(),
@@ -172,7 +178,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         console.error(error);
       }
     },
-    [toast]
+    [toast, settings]
   );
 
   const updateProject = (payload: Partial<BookProject>) => {
@@ -245,6 +251,11 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
       };
 
       updateChapter(chapter.id, {status: 'generating'});
+      
+      let modelName = 'gemini-1.5-flash';
+      if (settings.aiProvider === 'ollama' && settings.ollamaModel) {
+        modelName = `ollama/${settings.ollamaModel}`;
+      }
 
       try {
         const input: GenerateChapterContentInput = {
@@ -261,9 +272,10 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           minWords: options.minWords,
           temperature: options.temperature,
           seed: options.seed,
+          modelName: modelName,
         };
 
-        const result = await generateChapterContentAction(input);
+        const result = await generateChapterContentAction(input, settings);
 
         updateChapter(chapter.id, {
           content: result.chapterContent,
@@ -284,7 +296,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         throw error;
       }
     },
-    [state.project, updateChapter, toast]
+    [state.project, updateChapter, toast, settings]
   );
 
   const generateSingleChapter = useCallback(

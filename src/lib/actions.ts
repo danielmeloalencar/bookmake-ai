@@ -8,12 +8,29 @@ import {
   generateChapterContent,
   type GenerateChapterContentInput,
 } from '@/ai/flows/iteratively-generate-content';
+import {configureGenkit} from '@/ai/genkit';
+import {Settings} from './types';
+
+// Wrapper to ensure Genkit is configured before running an action
+async function withConfiguredGenkit<T, U>(
+  settings: Omit<Settings, 'theme'>,
+  action: (input: T) => Promise<U>,
+  input: T
+): Promise<U> {
+  await configureGenkit(settings);
+  return action(input);
+}
 
 export async function createOutlineAction(
   input: GenerateInitialOutlineInput,
+  settings: Omit<Settings, 'theme'>
 ) {
   try {
-    const output = await generateInitialOutline(input);
+    const output = await withConfiguredGenkit(
+      settings,
+      generateInitialOutline,
+      input
+    );
     return output;
   } catch (error: any) {
     console.error('Error generating initial outline:', error);
@@ -22,10 +39,15 @@ export async function createOutlineAction(
 }
 
 export async function generateChapterContentAction(
-  input: GenerateChapterContentInput
+  input: GenerateChapterContentInput,
+  settings: Omit<Settings, 'theme'>
 ) {
   try {
-    const output = await generateChapterContent(input);
+    const output = await withConfiguredGenkit(
+      settings,
+      generateChapterContent,
+      input
+    );
     return output;
   } catch (error: any) {
     console.error('Error generating chapter content:', error);

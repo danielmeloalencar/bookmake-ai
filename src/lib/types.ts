@@ -19,3 +19,11 @@ export interface BookProject {
   numberOfChapters: number;
   outline: Chapter[];
 }
+
+
+export interface Settings {
+  theme: 'light' | 'dark';
+  aiProvider: 'google' | 'ollama';
+  ollamaHost: string;
+  ollamaModel: string;
+}

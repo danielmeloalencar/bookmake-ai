@@ -7,61 +7,85 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from 'react';
+import type {Settings} from '@/lib/types';
 
-type Theme = 'light' | 'dark';
-
-type SettingsContextType = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+type SettingsContextType = Settings & {
+  setTheme: (theme: 'light' | 'dark') => void;
+  setAiProvider: (provider: 'google' | 'ollama') => void;
+  setOllamaHost: (host: string) => void;
+  setOllamaModel: (model: string) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
 
-const getInitialTheme = (): Theme => {
+const getInitialState = (): Settings => {
   if (typeof window !== 'undefined' && window.localStorage) {
-    const storedPrefs = window.localStorage.getItem('theme');
-    if (
-      typeof storedPrefs === 'string' &&
-      (storedPrefs === 'light' || storedPrefs === 'dark')
-    ) {
-      return storedPrefs;
-    }
-
-    const userMedia = window.matchMedia('(prefers-color-scheme: dark)');
-    if (userMedia.matches) {
-      return 'dark';
+    const savedSettings = window.localStorage.getItem('livromagico_settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        // Basic validation
+        if (parsed.theme && parsed.aiProvider) {
+          return parsed;
+        }
+      } catch (e) {
+        // Fallback to default if parsing fails
+      }
     }
   }
-  return 'light';
+  // Default state
+  return {
+    theme: 'light',
+    aiProvider: 'google',
+    ollamaHost: 'http://127.0.0.1:11434',
+    ollamaModel: 'gemma',
+  };
 };
 
 export function SettingsProvider({children}: {children: ReactNode}) {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const [settings, setSettings] = useState<Settings>(getInitialState);
 
-  const setTheme = (newTheme: Theme) => {
-    const root = window.document.documentElement;
-    const isDark = newTheme === 'dark';
-    root.classList.remove(isDark ? 'light' : 'dark');
-    root.classList.add(newTheme);
-    localStorage.setItem('theme', newTheme);
-    setThemeState(newTheme);
-  };
-
+  // Apply theme to DOM
   useEffect(() => {
     const root = window.document.documentElement;
-    const isDark = theme === 'dark';
+    const isDark = settings.theme === 'dark';
     root.classList.remove(isDark ? 'light' : 'dark');
-    root.classList.add(theme);
-  }, [theme]);
+    root.classList.add(settings.theme);
+  }, [settings.theme]);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('livromagico_settings', JSON.stringify(settings));
+  }, [settings]);
+
+  const setTheme = useCallback((theme: 'light' | 'dark') => {
+    setSettings(s => ({...s, theme}));
+  }, []);
+
+  const setAiProvider = useCallback((aiProvider: 'google' | 'ollama') => {
+    setSettings(s => ({...s, aiProvider}));
+  }, []);
+
+  const setOllamaHost = useCallback((ollamaHost: string) => {
+    setSettings(s => ({...s, ollamaHost}));
+  }, []);
+
+  const setOllamaModel = useCallback((ollamaModel: string) => {
+    setSettings(s => ({...s, ollamaModel}));
+  }, []);
 
   return (
     <SettingsContext.Provider
       value={{
-        theme,
+        ...settings,
         setTheme,
+        setAiProvider,
+        setOllamaHost,
+        setOllamaModel,
       }}
     >
       {children}

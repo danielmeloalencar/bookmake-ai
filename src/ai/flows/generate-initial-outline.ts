@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateInitialOutlineInputSchema = z.object({
   bookDescription: z.string().describe('A description of the book.'),
@@ -20,6 +19,7 @@ const GenerateInitialOutlineInputSchema = z.object({
   numberOfChapters: z
     .number()
     .describe('The desired number of chapters in the book.'),
+  modelName: z.string().describe('The model to use for generation.'),
 });
 export type GenerateInitialOutlineInput = z.infer<
   typeof GenerateInitialOutlineInputSchema
@@ -55,9 +55,7 @@ const generateInitialOutlineFlow = ai.defineFlow(
     inputSchema: GenerateInitialOutlineInputSchema,
     outputSchema: GenerateInitialOutlineOutputSchema,
   },
-  async (promptData) => {
-    const model = googleAI.model('gemini-1.5-flash');
-
+  async ({modelName, ...promptData}) => {
     const prompt = ai.definePrompt({
       name: 'generateInitialOutlinePrompt',
       input: {schema: z.any()},
@@ -75,7 +73,7 @@ const generateInitialOutlineFlow = ai.defineFlow(
         Outline:`,
     });
 
-    const {output} = await prompt(promptData, {model});
+    const {output} = await prompt(promptData, {model: modelName});
     return output!;
   }
 );
