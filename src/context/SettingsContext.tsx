@@ -9,16 +9,14 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
-import { nanoid } from 'nanoid';
-import type {Settings, McpServer} from '@/lib/types';
+import type {Settings} from '@/lib/types';
 
 type SettingsContextType = Settings & {
   setTheme: (theme: 'light' | 'dark') => void;
-  addMcpServer: (server: Omit<McpServer, 'id'>) => void;
-  updateMcpServer: (id: string, server: Partial<McpServer>) => void;
-  removeMcpServer: (id: string) => void;
-  setActiveMcpServerId: (id: string | null) => void;
-  getActiveMcpServer: () => McpServer | null;
+  setAiProvider: (provider: 'google' | 'ollama') => void;
+  setOllamaHost: (host: string) => void;
+  setOllamaModel: (model: string) => void;
+  getSerializableSettings: () => Omit<Settings, 'setTheme' | 'setAiProvider' | 'setOllamaHost' | 'setOllamaModel' | 'getSerializableSettings'>;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -31,7 +29,7 @@ const getInitialState = (): Settings => {
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        if (parsed.theme && Array.isArray(parsed.mcpServers)) {
+        if (parsed.theme && parsed.aiProvider) {
           return parsed;
         }
       } catch (e) {
@@ -40,16 +38,11 @@ const getInitialState = (): Settings => {
     }
   }
   // Default state
-  const defaultGoogleServer: McpServer = {
-    id: nanoid(),
-    name: 'Google Gemini Flash',
-    provider: 'google',
-    model: 'gemini-1.5-flash',
-  };
   return {
     theme: 'dark',
-    mcpServers: [defaultGoogleServer],
-    activeMcpServerId: defaultGoogleServer.id,
+    aiProvider: 'google',
+    ollamaHost: 'http://127.0.0.1:11434',
+    ollamaModel: 'gemma',
   };
 };
 
@@ -73,35 +66,22 @@ export function SettingsProvider({children}: {children: ReactNode}) {
     setSettings(s => ({...s, theme}));
   }, []);
 
-  const setMcpServers = useCallback((mcpServers: McpServer[]) => {
-     setSettings(s => ({...s, mcpServers}));
+  const setAiProvider = useCallback((provider: 'google' | 'ollama') => {
+    setSettings(s => ({...s, aiProvider: provider}));
   }, []);
 
-  const addMcpServer = useCallback((server: Omit<McpServer, 'id'>) => {
-    const newServer = { ...server, id: nanoid() };
-    setMcpServers([...settings.mcpServers, newServer]);
-  }, [settings.mcpServers, setMcpServers]);
-
-  const updateMcpServer = useCallback((id: string, serverUpdate: Partial<McpServer>) => {
-    setMcpServers(settings.mcpServers.map(s => s.id === id ? { ...s, ...serverUpdate } : s));
-  }, [settings.mcpServers, setMcpServers]);
-
-  const removeMcpServer = useCallback((id: string) => {
-    const newServers = settings.mcpServers.filter(s => s.id !== id);
-    setMcpServers(newServers);
-    // If the active server was deleted, reset to the first available one
-    if (settings.activeMcpServerId === id) {
-      setSettings(s => ({ ...s, activeMcpServerId: newServers[0]?.id || null }));
-    }
-  }, [settings.mcpServers, settings.activeMcpServerId, setMcpServers]);
-
-  const setActiveMcpServerId = useCallback((id: string | null) => {
-    setSettings(s => ({ ...s, activeMcpServerId: id }));
+  const setOllamaHost = useCallback((host: string) => {
+    setSettings(s => ({...s, ollamaHost: host}));
   }, []);
 
-  const getActiveMcpServer = useCallback(() => {
-    return settings.mcpServers.find(s => s.id === settings.activeMcpServerId) || null;
-  }, [settings.mcpServers, settings.activeMcpServerId]);
+  const setOllamaModel = useCallback((model: string) => {
+    setSettings(s => ({...s, ollamaModel: model}));
+  }, []);
+
+  const getSerializableSettings = useCallback(() => {
+    const { theme, aiProvider, ollamaHost, ollamaModel } = settings;
+    return { theme, aiProvider, ollamaHost, ollamaModel };
+  }, [settings]);
 
 
   return (
@@ -109,11 +89,10 @@ export function SettingsProvider({children}: {children: ReactNode}) {
       value={{
         ...settings,
         setTheme,
-        addMcpServer,
-        updateMcpServer,
-        removeMcpServer,
-        setActiveMcpServerId,
-        getActiveMcpServer,
+        setAiProvider,
+        setOllamaHost,
+        setOllamaModel,
+        getSerializableSettings,
       }}
     >
       {children}

@@ -9,7 +9,7 @@ import {
   useCallback,
   useState,
 } from 'react';
-import type {BookProject, Chapter, McpServer, Settings} from '@/lib/types';
+import type {BookProject, Chapter, Settings} from '@/lib/types';
 import {
   createOutlineAction,
   generateChapterContentAction,
@@ -18,7 +18,6 @@ import {useToast} from '@/hooks/use-toast';
 import {nanoid} from 'nanoid';
 import {GenerateChapterContentInput} from '@/ai/flows/iteratively-generate-content';
 import {useSettings} from './SettingsContext';
-import {GenerateInitialOutlineInput} from '@/ai/flows/generate-initial-outline';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -118,7 +117,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const {getActiveMcpServer} = useSettings();
+  const {getSerializableSettings} = useSettings();
 
   useEffect(() => {
     try {
@@ -136,46 +135,14 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
       dispatch({type: 'INITIALIZE_PROJECT', payload: null});
     }
   }, []);
-  
-  const getGenkitConfig = useCallback(() => {
-    const activeServer = getActiveMcpServer();
-    if (!activeServer) {
-       toast({
-        variant: 'destructive',
-        title: 'Nenhum servidor de IA ativo',
-        description: 'Por favor, selecione um servidor MCP nas configurações.',
-      });
-      return null;
-    }
-
-    const genkitConfig = {
-      aiProvider: activeServer.provider,
-      ollamaHost: activeServer.provider === 'ollama' ? activeServer.host : undefined,
-    }
-
-    const modelName = activeServer.provider === 'ollama'
-      ? `ollama/${activeServer.model}`
-      : activeServer.model;
-
-    return { genkitConfig, modelName };
-  }, [getActiveMcpServer, toast]);
-
 
   const createNewProject = useCallback(
     async (data: CreateProjectData) => {
-      const config = getGenkitConfig();
-      if (!config) return;
-      const { genkitConfig, modelName } = config;
-      
       dispatch({type: 'START_CREATION'});
-      
-      const actionInput: GenerateInitialOutlineInput = {
-        ...data,
-        modelName,
-      };
+      const settings = getSerializableSettings();
 
       try {
-        const result = await createOutlineAction(actionInput, genkitConfig);
+        const result = await createOutlineAction(data, settings);
         const newProject: BookProject = {
           ...data,
           id: nanoid(),
@@ -202,7 +169,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         console.error(error);
       }
     },
-    [toast, getGenkitConfig]
+    [toast, getSerializableSettings]
   );
 
   const updateProject = (payload: Partial<BookProject>) => {
@@ -264,10 +231,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
       options: GenerationOptions = {}
     ) => {
       if (!state.project) return;
-      
-      const config = getGenkitConfig();
-      if (!config) return;
-      const { genkitConfig, modelName } = config;
+      const settings = getSerializableSettings();
 
       const getPreviousChaptersContent = () => {
         const currentIndex = allChapters.findIndex(c => c.id === chapter.id);
@@ -281,6 +245,11 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
       updateChapter(chapter.id, {status: 'generating'});
       
       try {
+        const modelName =
+          settings.aiProvider === 'ollama'
+            ? `ollama/${settings.ollamaModel}`
+            : 'gemini-1.5-flash';
+
         const input: GenerateChapterContentInput = {
           bookDescription: state.project.bookDescription,
           targetAudience: state.project.targetAudience,
@@ -298,7 +267,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           modelName: modelName,
         };
 
-        const result = await generateChapterContentAction(input, genkitConfig);
+        const result = await generateChapterContentAction(input, settings);
 
         updateChapter(chapter.id, {
           content: result.chapterContent,
@@ -319,7 +288,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         throw error;
       }
     },
-    [state.project, updateChapter, toast, getGenkitConfig]
+    [state.project, updateChapter, toast, getSerializableSettings]
   );
 
   const generateSingleChapter = useCallback(

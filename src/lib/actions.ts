@@ -3,33 +3,47 @@
 
 import {
   generateInitialOutline,
-  type GenerateInitialOutlineInput,
 } from '@/ai/flows/generate-initial-outline';
 import {
   generateChapterContent,
   type GenerateChapterContentInput,
 } from '@/ai/flows/iteratively-generate-content';
-import {configureGenkit, type GenkitConfig} from '@/ai/genkit';
+import {configureGenkit} from '@/ai/genkit';
+import type {Settings} from './types';
+
+type CreateOutlineInput = {
+  bookDescription: string;
+  targetAudience: string;
+  language: string;
+  difficultyLevel: string;
+  numberOfChapters: number;
+}
+
 
 // Wrapper to ensure Genkit is configured before running an action
 async function withConfiguredGenkit<T, U>(
-  settings: GenkitConfig,
+  settings: Settings,
   action: (input: T) => Promise<U>,
   input: T
 ): Promise<U> {
-  await configureGenkit(settings);
+  await configureGenkit({
+      aiProvider: settings.aiProvider,
+      ollamaHost: settings.ollamaHost,
+    });
   return action(input);
 }
 
 export async function createOutlineAction(
-  input: GenerateInitialOutlineInput,
-  settings: GenkitConfig
+  input: CreateOutlineInput,
+  settings: Settings
 ) {
   try {
+    const modelName = settings.aiProvider === 'ollama' ? `ollama/${settings.ollamaModel}` : 'gemini-1.5-flash';
+    const actionInput = { ...input, modelName };
     const output = await withConfiguredGenkit(
       settings,
       generateInitialOutline,
-      input
+      actionInput
     );
     return output;
   } catch (error: any) {
@@ -40,7 +54,7 @@ export async function createOutlineAction(
 
 export async function generateChapterContentAction(
   input: GenerateChapterContentInput,
-  settings: GenkitConfig
+  settings: Settings
 ) {
   try {
     const output = await withConfiguredGenkit(

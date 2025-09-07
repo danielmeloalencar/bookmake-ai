@@ -1,5 +1,4 @@
 
-
 export interface Chapter {
   id: string;
   title: string;
@@ -21,16 +20,9 @@ export interface BookProject {
   outline: Chapter[];
 }
 
-export interface McpServer {
-  id: string;
-  name: string;
-  provider: 'google' | 'ollama';
-  host?: string; // Only for Ollama
-  model: string;
-}
-
 export interface Settings {
   theme: 'light' | 'dark';
-  mcpServers: McpServer[];
-  activeMcpServerId: string | null;
+  aiProvider: 'google' | 'ollama';
+  ollamaHost?: string;
+  ollamaModel?: string;
 }
