@@ -8,7 +8,7 @@ import {
   useCallback,
   useState,
 } from 'react';
-import type {BookProject, Chapter} from '@/lib/types';
+import type {BookProject, Chapter, Settings} from '@/lib/types';
 import {
   createOutlineAction,
   generateChapterContentAction,
@@ -117,7 +117,14 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const { theme, ...settings } = useSettings();
+  const { theme, aiProvider, ollamaHost, ollamaModel } = useSettings();
+
+  const serializableSettings: Omit<Settings, 'theme'> = {
+    aiProvider,
+    ollamaHost,
+    ollamaModel,
+  };
+
 
   useEffect(() => {
     try {
@@ -139,19 +146,13 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
   const createNewProject = useCallback(
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
-
-      let modelName = 'gemini-1.5-flash';
-      if (settings.aiProvider === 'ollama' && settings.ollamaModel) {
-        modelName = `ollama/${settings.ollamaModel}`;
-      }
       
       const actionInput: GenerateInitialOutlineInput = {
         ...data,
-        modelName,
       };
 
       try {
-        const result = await createOutlineAction(actionInput, settings);
+        const result = await createOutlineAction(actionInput, serializableSettings);
         const newProject: BookProject = {
           ...data,
           id: nanoid(),
@@ -178,7 +179,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         console.error(error);
       }
     },
-    [toast, settings]
+    [toast, serializableSettings]
   );
 
   const updateProject = (payload: Partial<BookProject>) => {
@@ -252,11 +253,6 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
 
       updateChapter(chapter.id, {status: 'generating'});
       
-      let modelName = 'gemini-1.5-flash';
-      if (settings.aiProvider === 'ollama' && settings.ollamaModel) {
-        modelName = `ollama/${settings.ollamaModel}`;
-      }
-
       try {
         const input: GenerateChapterContentInput = {
           bookDescription: state.project.bookDescription,
@@ -272,10 +268,9 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           minWords: options.minWords,
           temperature: options.temperature,
           seed: options.seed,
-          modelName: modelName,
         };
 
-        const result = await generateChapterContentAction(input, settings);
+        const result = await generateChapterContentAction(input, serializableSettings);
 
         updateChapter(chapter.id, {
           content: result.chapterContent,
@@ -296,7 +291,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         throw error;
       }
     },
-    [state.project, updateChapter, toast, settings]
+    [state.project, updateChapter, toast, serializableSettings]
   );
 
   const generateSingleChapter = useCallback(
