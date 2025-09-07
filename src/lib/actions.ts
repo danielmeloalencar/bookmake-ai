@@ -10,26 +10,12 @@ import {
 } from '@/ai/flows/iteratively-generate-content';
 import {configureGenkit} from '@/ai/genkit';
 
-async function configureGenkitForAction(modelName?: string) {
-  if (modelName?.startsWith('ollama/')) {
-    const ollamaHost = process.env.OLLAMA_HOST;
-    if (!ollamaHost) {
-      throw new Error(
-        'OLLAMA_HOST environment variable is not set. Please configure it in your .env file for server-side Ollama requests.'
-      );
-    }
-    configureGenkit({
-      provider: 'Ollama',
-      ollamaHost,
-    });
-  } else {
-    configureGenkit({provider: 'Google'});
-  }
-}
+// Since we are only using Google AI for now, we can configure it once.
+// If we re-add other providers, this logic will need to be more dynamic.
+configureGenkit({provider: 'Google'});
 
 export async function createOutlineAction(input: GenerateInitialOutlineInput) {
   try {
-    await configureGenkitForAction(input.modelName);
     const output = await generateInitialOutline(input);
     return output;
   } catch (error: any) {
@@ -42,7 +28,6 @@ export async function generateChapterContentAction(
   input: GenerateChapterContentInput
 ) {
   try {
-    await configureGenkitForAction(input.modelName);
     const output = await generateChapterContent(input);
     return output;
   } catch (error: any) {

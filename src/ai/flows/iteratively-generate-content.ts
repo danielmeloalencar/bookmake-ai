@@ -47,7 +47,6 @@ const GenerateChapterContentInputSchema = z.object({
     .optional()
     .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
-  modelName: z.string().optional().describe('The name of the model to use.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -108,12 +107,10 @@ const generateChapterContentFlow = ai.defineFlow(
     inputSchema: GenerateChapterContentInputSchema,
     outputSchema: GenerateChapterContentOutputSchema,
   },
-  async ({modelName, ...input}) => {
+  async (input) => {
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
-    const model = modelName
-      ? ai.model(modelName)
-      : googleAI.model('gemini-1.5-flash');
+    const model = googleAI.model('gemini-1.5-flash');
 
     const {output} = await ai.generate({
       prompt: finalPrompt,

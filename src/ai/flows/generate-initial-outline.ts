@@ -20,7 +20,6 @@ const GenerateInitialOutlineInputSchema = z.object({
   numberOfChapters: z
     .number()
     .describe('The desired number of chapters in the book.'),
-  modelName: z.string().optional().describe('The name of the model to use.'),
 });
 export type GenerateInitialOutlineInput = z.infer<
   typeof GenerateInitialOutlineInputSchema
@@ -56,10 +55,8 @@ const generateInitialOutlineFlow = ai.defineFlow(
     inputSchema: GenerateInitialOutlineInputSchema,
     outputSchema: GenerateInitialOutlineOutputSchema,
   },
-  async ({modelName, ...promptData}) => {
-    const model = modelName
-      ? ai.model(modelName)
-      : googleAI.model('gemini-1.5-flash');
+  async (promptData) => {
+    const model = googleAI.model('gemini-1.5-flash');
 
     const prompt = ai.definePrompt({
       name: 'generateInitialOutlinePrompt',
