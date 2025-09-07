@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,6 +12,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {getMcpHost} from '@/ai/mcp-host';
 import {z} from 'genkit';
 import Handlebars from 'handlebars';
 
@@ -71,6 +73,8 @@ export async function generateChapterContent(
 
 const promptTemplate = `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
 
+You have access to a set of tools from the Model Context Protocol (MCP). If the user's prompt or the context suggests that you need to access local files (e.g., "analyze this file", "read my project structure"), use the provided MCP tools to do so.
+
 Do not add chapter numbering in the content, just the text itself.
 
 If existing content for the chapter is provided as 'Current Content', your task is to refine or modify it based on the 'Additional Instructions'. If 'Current Content' is empty, you should write the chapter from scratch based on the outline.
@@ -78,7 +82,7 @@ If existing content for the chapter is provided as 'Current Content', your task 
 Book Description: {{bookDescription}}
 Target Audience: {{targetAudience}}
 Language: {{language}}
-Difficulty Level: {{difficultyLevel}}
+DifficultyLevel: {{difficultyLevel}}
 
 Previous Chapters Content:
 {{{previousChaptersContent}}}
@@ -110,10 +114,13 @@ const generateChapterContentFlow = ai.defineFlow(
   async ({modelName, temperature, seed, ...input}) => {
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
+    const mcpHost = getMcpHost();
 
     const {output} = await ai.generate({
       prompt: finalPrompt,
       model: modelName,
+      tools: await mcpHost.getActiveTools(ai),
+      resources: await mcpHost.getActiveResources(ai),
       output: {
         schema: GenerateChapterContentOutputSchema,
       },

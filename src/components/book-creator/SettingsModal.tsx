@@ -28,6 +28,8 @@ export function SettingsModal() {
     setOllamaHost,
     ollamaModel,
     setOllamaModel,
+    mcp,
+    setMcpConfig
   } = useSettings();
 
   return (
@@ -37,7 +39,7 @@ export function SettingsModal() {
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
@@ -92,6 +94,32 @@ export function SettingsModal() {
                     </div>
                 </div>
               )}
+          </fieldset>
+
+          <fieldset className="border p-4 rounded-md space-y-4">
+             <legend className="px-2 text-sm font-medium">Servidores MCP</legend>
+             <div className="flex items-center justify-between">
+                <Label htmlFor="mcp-fs-switch">
+                  Servidor de Arquivos (filesystem)
+                  <p className="text-xs text-muted-foreground">Permite que a IA leia arquivos locais.</p>
+                </Label>
+                <Switch
+                    id="mcp-fs-switch"
+                    checked={mcp.fs}
+                    onCheckedChange={(checked) => setMcpConfig({...mcp, fs: checked})}
+                />
+             </div>
+             <div className="flex items-center justify-between">
+                <Label htmlFor="mcp-memory-switch">
+                  Servidor de Memória (memory)
+                   <p className="text-xs text-muted-foreground">Fornece um contexto volátil para a IA.</p>
+                </Label>
+                <Switch
+                    id="mcp-memory-switch"
+                    checked={mcp.memory}
+                    onCheckedChange={(checked) => setMcpConfig({...mcp, memory: checked})}
+                />
+             </div>
           </fieldset>
         </div>
         <DialogFooter>

@@ -20,9 +20,15 @@ export interface BookProject {
   outline: Chapter[];
 }
 
+export interface McpConfig {
+  fs: boolean;
+  memory: boolean;
+}
+
 export interface Settings {
   theme: 'light' | 'dark';
   aiProvider: 'google' | 'ollama';
   ollamaHost?: string;
   ollamaModel?: string;
+  mcp: McpConfig;
 }
