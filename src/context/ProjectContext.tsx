@@ -117,7 +117,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const { theme, aiProvider, ollamaHost, ollamaModel } = useSettings();
+  const { aiProvider, ollamaHost, ollamaModel } = useSettings();
 
   const serializableSettings: Omit<Settings, 'theme'> = {
     aiProvider,
@@ -147,8 +147,11 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
       
+      const modelName = serializableSettings.aiProvider === 'ollama' ? `ollama/${serializableSettings.ollamaModel}` : 'gemini-1.5-flash';
+      
       const actionInput: GenerateInitialOutlineInput = {
         ...data,
+        modelName,
       };
 
       try {
@@ -254,6 +257,8 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
       updateChapter(chapter.id, {status: 'generating'});
       
       try {
+        const modelName = serializableSettings.aiProvider === 'ollama' ? `ollama/${serializableSettings.ollamaModel}` : 'gemini-1.5-flash';
+        
         const input: GenerateChapterContentInput = {
           bookDescription: state.project.bookDescription,
           targetAudience: state.project.targetAudience,
@@ -268,6 +273,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           minWords: options.minWords,
           temperature: options.temperature,
           seed: options.seed,
+          modelName: modelName,
         };
 
         const result = await generateChapterContentAction(input, serializableSettings);
