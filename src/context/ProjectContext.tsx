@@ -16,6 +16,8 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {nanoid} from 'nanoid';
 import {GenerateChapterContentInput} from '@/ai/flows/iteratively-generate-content';
+import {useSettings} from './SettingsContext';
+import { GenerateInitialOutlineInput } from '@/ai/flows/generate-initial-outline';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -115,6 +117,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
+  const settings = useSettings();
 
   useEffect(() => {
     try {
@@ -136,8 +139,13 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
   const createNewProject = useCallback(
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
+      
+      const actionInput: GenerateInitialOutlineInput = {
+        ...data,
+      };
+
       try {
-        const result = await createOutlineAction(data);
+        const result = await createOutlineAction(actionInput);
         const newProject: BookProject = {
           ...data,
           id: nanoid(),

@@ -10,10 +10,17 @@ import {
 } from 'react';
 
 type Theme = 'light' | 'dark';
+type AIProvider = 'Google' | 'Ollama';
 
 type SettingsContextType = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  aiProvider: AIProvider;
+  setAiProvider: (provider: AIProvider) => void;
+  ollamaModel: string;
+  setOllamaModel: (model: string) => void;
+  ollamaHost: string;
+  setOllamaHost: (host: string) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -38,21 +45,67 @@ const getInitialTheme = (): Theme => {
   return 'light';
 };
 
+const getInitialProvider = (): AIProvider => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem('aiProvider');
+        if (stored === 'Google' || stored === 'Ollama') {
+            return stored;
+        }
+    }
+    return 'Google';
+}
+
+const getInitialOllamaModel = (): string => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem('ollamaModel') || 'llama3';
+    }
+    return 'llama3';
+}
+
+const getInitialOllamaHost = (): string => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem('ollamaHost') || 'http://127.0.0.1:11434';
+    }
+    return 'http://127.0.0.1:11434';
+}
+
+
 export function SettingsProvider({children}: {children: ReactNode}) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const [aiProvider, setAiProviderState] = useState<AIProvider>(getInitialProvider());
+  const [ollamaModel, setOllamaModelState] = useState<string>(getInitialOllamaModel());
+  const [ollamaHost, setOllamaHostState] = useState<string>(getInitialOllamaHost());
 
-  const rawSetTheme = (rawTheme: Theme) => {
+
+  const setTheme = (newTheme: Theme) => {
     const root = window.document.documentElement;
-    const isDark = rawTheme === 'dark';
-
+    const isDark = newTheme === 'dark';
     root.classList.remove(isDark ? 'light' : 'dark');
-    root.classList.add(rawTheme);
-
-    localStorage.setItem('theme', rawTheme);
+    root.classList.add(newTheme);
+    localStorage.setItem('theme', newTheme);
+    setThemeState(newTheme);
   };
+  
+  const setAiProvider = (newProvider: AIProvider) => {
+    localStorage.setItem('aiProvider', newProvider);
+    setAiProviderState(newProvider);
+  }
+
+  const setOllamaModel = (newModel: string) => {
+    localStorage.setItem('ollamaModel', newModel);
+    setOllamaModelState(newModel);
+  }
+
+  const setOllamaHost = (newHost: string) => {
+    localStorage.setItem('ollamaHost', newHost);
+    setOllamaHostState(newHost);
+  }
 
   useEffect(() => {
-    rawSetTheme(theme);
+    const root = window.document.documentElement;
+    const isDark = theme === 'dark';
+    root.classList.remove(isDark ? 'light' : 'dark');
+    root.classList.add(theme);
   }, [theme]);
 
   return (
@@ -60,6 +113,12 @@ export function SettingsProvider({children}: {children: ReactNode}) {
       value={{
         theme,
         setTheme,
+        aiProvider,
+        setAiProvider,
+        ollamaModel,
+        setOllamaModel,
+        ollamaHost,
+        setOllamaHost,
       }}
     >
       {children}
