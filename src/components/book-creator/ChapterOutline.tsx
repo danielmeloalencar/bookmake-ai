@@ -40,7 +40,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from '../ui/textarea';
 import type { Chapter } from '@/lib/types';
 import { Switch } from '../ui/switch';
-import { useSettings } from '@/context/SettingsContext';
 import { Slider } from '../ui/slider';
 
 
@@ -96,20 +95,19 @@ function RenameChapterDialog({ chapterId, currentTitle, onRename }: { chapterId:
 
 function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger: React.ReactNode }) {
   const { generateSingleChapter, isGenerating } = useProject();
-  const { globalMinWords, temperature, seed } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [extraPrompt, setExtraPrompt] = useState('');
   const [minWords, setMinWords] = useState<number | undefined>(undefined);
   const [refineContent, setRefineContent] = useState(true);
-  const [localTemp, setLocalTemp] = useState(temperature);
-  const [localSeed, setLocalSeed] = useState<number | undefined>(seed);
+  const [localTemp, setLocalTemp] = useState(0.8);
+  const [localSeed, setLocalSeed] = useState<number | undefined>(undefined);
   
   const hasContent = chapter.content && chapter.content.trim().length > 0;
 
   const handleGenerate = () => {
     generateSingleChapter(chapter.id, { 
       extraPrompt, 
-      minWords: minWords ?? globalMinWords, 
+      minWords: minWords, 
       refine: hasContent ? refineContent : false,
       temperature: localTemp,
       seed: localSeed,
@@ -122,8 +120,8 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
       setExtraPrompt('');
       setMinWords(undefined);
       setRefineContent(true);
-      setLocalTemp(temperature);
-      setLocalSeed(seed);
+      setLocalTemp(0.8);
+      setLocalSeed(undefined);
     }
     setIsOpen(open);
   }
@@ -168,7 +166,7 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
               type="number"
               value={minWords || ''}
               onChange={(e) => setMinWords(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder={`Padrão global: ${globalMinWords || 'N/A'}`}
+              placeholder="Ex: 500"
             />
           </div>
           <div className="space-y-2">
@@ -192,7 +190,7 @@ function GenerateChapterDialog({ chapter, trigger }: { chapter: Chapter; trigger
               type="number"
               value={localSeed || ''}
               onChange={(e) => setLocalSeed(e.target.value ? parseInt(e.target.value) : undefined)}
-              placeholder={`Padrão global: ${seed || 'Aleatório'}`}
+              placeholder="Use a mesma seed para resultados consistentes"
             />
              <p className="text-sm text-muted-foreground">
                 Gera resultados consistentes para a mesma seed.

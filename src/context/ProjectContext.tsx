@@ -16,7 +16,6 @@ import {
 import {useToast} from '@/hooks/use-toast';
 import {nanoid} from 'nanoid';
 import {GenerateChapterContentInput} from '@/ai/flows/iteratively-generate-content';
-import {useSettings} from './SettingsContext';
 
 type CreateProjectData = {
   bookDescription: string;
@@ -116,7 +115,6 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const {globalMinWords, temperature, seed} = useSettings();
 
   useEffect(() => {
     try {
@@ -252,8 +250,8 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           previousChaptersContent: getPreviousChaptersContent(),
           currentContent: options.refine ? chapter.content : undefined,
           extraPrompt: options.extraPrompt,
-          minWords: options.minWords ?? globalMinWords,
-          temperature: options.temperature ?? temperature,
+          minWords: options.minWords,
+          temperature: options.temperature,
           seed: options.seed,
         };
 
@@ -278,14 +276,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         throw error;
       }
     },
-    [
-      state.project,
-      updateChapter,
-      toast,
-      globalMinWords,
-      temperature,
-      seed,
-    ]
+    [state.project, updateChapter, toast]
   );
 
   const generateSingleChapter = useCallback(
