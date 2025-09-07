@@ -1,21 +1,18 @@
-
+// src/components/book-creator/TopBar.tsx
 'use client';
 
-import { useState } from 'react';
-import { useProject } from '@/context/ProjectContext';
-import { Button } from '@/components/ui/button';
-import {
-  Download,
-  FilePlus2,
-} from 'lucide-react';
+import {useState} from 'react';
+import {useProject} from '@/context/ProjectContext';
+import {Button} from '@/components/ui/button';
+import {Download, FilePlus2} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { exportAsMarkdown } from '@/lib/utils';
-import { Logo } from '../icons';
+import {exportAsMarkdown} from '@/lib/utils';
+import {Logo} from '../icons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,11 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { SettingsModal } from './SettingsModal';
+} from '@/components/ui/alert-dialog';
+import {SettingsModal} from './SettingsModal';
 
 export function TopBar() {
-  const { project, resetProject } = useProject();
+  const {project, resetProject} = useProject();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   if (!project) return null;
@@ -58,7 +55,10 @@ export function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialog
+          open={isResetDialogOpen}
+          onOpenChange={setIsResetDialogOpen}
+        >
           <AlertDialogTrigger asChild>
             <Button variant="destructive">
               <FilePlus2 className="mr-2 h-4 w-4" />
@@ -69,12 +69,20 @@ export function TopBar() {
             <AlertDialogHeader>
               <AlertDialogTitle>Começar um novo projeto?</AlertDialogTitle>
               <AlertDialogDescription>
-                Isso limpará o projeto atual. Seu progresso será perdido se não for exportado.
+                Isso limpará o projeto atual. Seu progresso será perdido se não
+                for exportado.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => { resetProject(); setIsResetDialogOpen(false); }}>Criar Novo</AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => {
+                  resetProject();
+                  setIsResetDialogOpen(false);
+                }}
+              >
+                Criar Novo
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

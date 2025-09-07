@@ -1,4 +1,3 @@
-
 'use server';
 
 import {
@@ -14,9 +13,9 @@ export async function createOutlineAction(input: GenerateInitialOutlineInput) {
   try {
     const output = await generateInitialOutline(input);
     return output;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating initial outline:', error);
-    throw new Error('Failed to generate book outline.');
+    throw new Error(error.message || 'Failed to generate book outline.');
   }
 }
 

@@ -16,21 +16,36 @@ const GenerateInitialOutlineInputSchema = z.object({
   targetAudience: z.string().describe('The target audience for the book.'),
   language: z.string().describe('The language of the book.'),
   difficultyLevel: z.string().describe('The difficulty level of the book.'),
-  numberOfChapters: z.number().describe('The desired number of chapters in the book.'),
+  numberOfChapters: z
+    .number()
+    .describe('The desired number of chapters in the book.'),
+  model: z.string().optional().describe('The model to use for generation.'),
 });
-export type GenerateInitialOutlineInput = z.infer<typeof GenerateInitialOutlineInputSchema>;
+export type GenerateInitialOutlineInput = z.infer<
+  typeof GenerateInitialOutlineInputSchema
+>;
 
 const GenerateInitialOutlineOutputSchema = z.object({
-  outline: z.array(
-    z.object({
-      chapterTitle: z.string().describe('The title of the chapter.'),
-      subchapters: z.array(z.string()).describe('The subchapters of the chapter.'),
-    })
-  ).describe('The generated outline for the book, with chapter titles and subchapters.'),
+  outline: z
+    .array(
+      z.object({
+        chapterTitle: z.string().describe('The title of the chapter.'),
+        subchapters: z
+          .array(z.string())
+          .describe('The subchapters of the chapter.'),
+      })
+    )
+    .describe(
+      'The generated outline for the book, with chapter titles and subchapters.'
+    ),
 });
-export type GenerateInitialOutlineOutput = z.infer<typeof GenerateInitialOutlineOutputSchema>;
+export type GenerateInitialOutlineOutput = z.infer<
+  typeof GenerateInitialOutlineOutputSchema
+>;
 
-export async function generateInitialOutline(input: GenerateInitialOutlineInput): Promise<GenerateInitialOutlineOutput> {
+export async function generateInitialOutline(
+  input: GenerateInitialOutlineInput
+): Promise<GenerateInitialOutlineOutput> {
   return generateInitialOutlineFlow(input);
 }
 
@@ -58,7 +73,9 @@ const generateInitialOutlineFlow = ai.defineFlow(
     outputSchema: GenerateInitialOutlineOutputSchema,
   },
   async input => {
-    const {output} = await generateInitialOutlinePrompt(input);
+    const {output} = await generateInitialOutlinePrompt(input, {
+      model: input.model || undefined,
+    });
     return output!;
   }
 );

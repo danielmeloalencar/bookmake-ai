@@ -1,4 +1,3 @@
-
 // src/ai/flows/iteratively-generate-content.ts
 'use server';
 
@@ -20,14 +19,35 @@ const GenerateChapterContentInputSchema = z.object({
   bookDescription: z.string().describe('A high-level description of the book.'),
   targetAudience: z.string().describe('The target audience of the book.'),
   language: z.string().describe('The language of the book.'),
-  chapterOutline: z.string().describe('The outline for the current chapter, including subchapters.'),
-  previousChaptersContent: z.string().describe('The content of the previous chapters.'),
-  difficultyLevel: z.string().describe('The target difficulty level of the book.'),
-  currentContent: z.string().optional().describe('The existing content of the chapter to be refined or modified.'),
-  extraPrompt: z.string().optional().describe('Extra instructions or prompt to guide content generation/modification.'),
-  minWords: z.number().optional().describe('The minimum number of words for the generated content.'),
-  temperature: z.number().optional().describe('Controls randomness. Higher values increase creativity.'),
+  chapterOutline: z
+    .string()
+    .describe('The outline for the current chapter, including subchapters.'),
+  previousChaptersContent: z
+    .string()
+    .describe('The content of the previous chapters.'),
+  difficultyLevel: z
+    .string()
+    .describe('The target difficulty level of the book.'),
+  currentContent: z
+    .string()
+    .optional()
+    .describe('The existing content of the chapter to be refined or modified.'),
+  extraPrompt: z
+    .string()
+    .optional()
+    .describe(
+      'Extra instructions or prompt to guide content generation/modification.'
+    ),
+  minWords: z
+    .number()
+    .optional()
+    .describe('The minimum number of words for the generated content.'),
+  temperature: z
+    .number()
+    .optional()
+    .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
+  model: z.string().optional().describe('The model to use for generation.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -35,7 +55,9 @@ export type GenerateChapterContentInput = z.infer<
 >;
 
 const GenerateChapterContentOutputSchema = z.object({
-  chapterContent: z.string().describe('The generated content for the current chapter.'),
+  chapterContent: z
+    .string()
+    .describe('The generated content for the current chapter.'),
 });
 
 export type GenerateChapterContentOutput = z.infer<
@@ -86,14 +108,14 @@ const generateChapterContentFlow = ai.defineFlow(
     inputSchema: GenerateChapterContentInputSchema,
     outputSchema: GenerateChapterContentOutputSchema,
   },
-  async (input) => {
+  async input => {
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
-    
-    const { output } = await ai.generate({
+
+    const {output} = await ai.generate({
       prompt: finalPrompt,
-      model: 'googleai/gemini-1.5-flash',
-      output: { 
+      model: input.model || 'googleai/gemini-1.5-flash',
+      output: {
         schema: GenerateChapterContentOutputSchema,
       },
       config: {
@@ -101,7 +123,7 @@ const generateChapterContentFlow = ai.defineFlow(
         seed: input.seed,
       },
     });
-    
+
     return output!;
   }
 );
