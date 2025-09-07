@@ -1,4 +1,4 @@
-// src/context/SettingsContext.tsx
+
 'use client';
 
 import {
@@ -9,13 +9,16 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
-import type {Settings} from '@/lib/types';
+import { nanoid } from 'nanoid';
+import type {Settings, McpServer} from '@/lib/types';
 
 type SettingsContextType = Settings & {
   setTheme: (theme: 'light' | 'dark') => void;
-  setAiProvider: (provider: 'google' | 'ollama') => void;
-  setOllamaHost: (host: string) => void;
-  setOllamaModel: (model: string) => void;
+  addMcpServer: (server: Omit<McpServer, 'id'>) => void;
+  updateMcpServer: (id: string, server: Partial<McpServer>) => void;
+  removeMcpServer: (id: string) => void;
+  setActiveMcpServerId: (id: string | null) => void;
+  getActiveMcpServer: () => McpServer | null;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -28,8 +31,7 @@ const getInitialState = (): Settings => {
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        // Basic validation
-        if (parsed.theme && parsed.aiProvider) {
+        if (parsed.theme && Array.isArray(parsed.mcpServers)) {
           return parsed;
         }
       } catch (e) {
@@ -38,11 +40,16 @@ const getInitialState = (): Settings => {
     }
   }
   // Default state
+  const defaultGoogleServer: McpServer = {
+    id: nanoid(),
+    name: 'Google Gemini Flash',
+    provider: 'google',
+    model: 'gemini-1.5-flash',
+  };
   return {
     theme: 'dark',
-    aiProvider: 'google',
-    ollamaHost: 'http://127.0.0.1:11434',
-    ollamaModel: 'qwen3:8b',
+    mcpServers: [defaultGoogleServer],
+    activeMcpServerId: defaultGoogleServer.id,
   };
 };
 
@@ -66,26 +73,47 @@ export function SettingsProvider({children}: {children: ReactNode}) {
     setSettings(s => ({...s, theme}));
   }, []);
 
-  const setAiProvider = useCallback((aiProvider: 'google' | 'ollama') => {
-    setSettings(s => ({...s, aiProvider}));
+  const setMcpServers = useCallback((mcpServers: McpServer[]) => {
+     setSettings(s => ({...s, mcpServers}));
   }, []);
 
-  const setOllamaHost = useCallback((ollamaHost: string) => {
-    setSettings(s => ({...s, ollamaHost}));
+  const addMcpServer = useCallback((server: Omit<McpServer, 'id'>) => {
+    const newServer = { ...server, id: nanoid() };
+    setMcpServers([...settings.mcpServers, newServer]);
+  }, [settings.mcpServers, setMcpServers]);
+
+  const updateMcpServer = useCallback((id: string, serverUpdate: Partial<McpServer>) => {
+    setMcpServers(settings.mcpServers.map(s => s.id === id ? { ...s, ...serverUpdate } : s));
+  }, [settings.mcpServers, setMcpServers]);
+
+  const removeMcpServer = useCallback((id: string) => {
+    const newServers = settings.mcpServers.filter(s => s.id !== id);
+    setMcpServers(newServers);
+    // If the active server was deleted, reset to the first available one
+    if (settings.activeMcpServerId === id) {
+      setSettings(s => ({ ...s, activeMcpServerId: newServers[0]?.id || null }));
+    }
+  }, [settings.mcpServers, settings.activeMcpServerId, setMcpServers]);
+
+  const setActiveMcpServerId = useCallback((id: string | null) => {
+    setSettings(s => ({ ...s, activeMcpServerId: id }));
   }, []);
 
-  const setOllamaModel = useCallback((ollamaModel: string) => {
-    setSettings(s => ({...s, ollamaModel}));
-  }, []);
+  const getActiveMcpServer = useCallback(() => {
+    return settings.mcpServers.find(s => s.id === settings.activeMcpServerId) || null;
+  }, [settings.mcpServers, settings.activeMcpServerId]);
+
 
   return (
     <SettingsContext.Provider
       value={{
         ...settings,
         setTheme,
-        setAiProvider,
-        setOllamaHost,
-        setOllamaModel,
+        addMcpServer,
+        updateMcpServer,
+        removeMcpServer,
+        setActiveMcpServerId,
+        getActiveMcpServer,
       }}
     >
       {children}

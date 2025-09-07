@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -8,12 +9,11 @@ import {
   generateChapterContent,
   type GenerateChapterContentInput,
 } from '@/ai/flows/iteratively-generate-content';
-import {configureGenkit} from '@/ai/genkit';
-import {Settings} from './types';
+import {configureGenkit, type GenkitConfig} from '@/ai/genkit';
 
 // Wrapper to ensure Genkit is configured before running an action
 async function withConfiguredGenkit<T, U>(
-  settings: Omit<Settings, 'theme'>,
+  settings: GenkitConfig,
   action: (input: T) => Promise<U>,
   input: T
 ): Promise<U> {
@@ -23,7 +23,7 @@ async function withConfiguredGenkit<T, U>(
 
 export async function createOutlineAction(
   input: GenerateInitialOutlineInput,
-  settings: Omit<Settings, 'theme'>
+  settings: GenkitConfig
 ) {
   try {
     const output = await withConfiguredGenkit(
@@ -40,7 +40,7 @@ export async function createOutlineAction(
 
 export async function generateChapterContentAction(
   input: GenerateChapterContentInput,
-  settings: Omit<Settings, 'theme'>
+  settings: GenkitConfig
 ) {
   try {
     const output = await withConfiguredGenkit(
