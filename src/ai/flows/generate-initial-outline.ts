@@ -19,7 +19,6 @@ const GenerateInitialOutlineInputSchema = z.object({
   numberOfChapters: z
     .number()
     .describe('The desired number of chapters in the book.'),
-  model: z.string().optional().describe('The model to use for generation.'),
 });
 export type GenerateInitialOutlineInput = z.infer<
   typeof GenerateInitialOutlineInputSchema
@@ -73,9 +72,7 @@ const generateInitialOutlineFlow = ai.defineFlow(
     outputSchema: GenerateInitialOutlineOutputSchema,
   },
   async input => {
-    const {output} = await generateInitialOutlinePrompt(input, {
-      model: input.model || undefined,
-    });
+    const {output} = await generateInitialOutlinePrompt(input);
     return output!;
   }
 );

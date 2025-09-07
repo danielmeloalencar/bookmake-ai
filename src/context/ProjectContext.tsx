@@ -116,7 +116,7 @@ const ProjectContext = createContext<
 export function ProjectProvider({children}: {children: React.ReactNode}) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
   const {toast} = useToast();
-  const {globalMinWords, temperature, seed, getModel} = useSettings();
+  const {globalMinWords, temperature, seed} = useSettings();
 
   useEffect(() => {
     try {
@@ -139,10 +139,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
     async (data: CreateProjectData) => {
       dispatch({type: 'START_CREATION'});
       try {
-        const result = await createOutlineAction({
-          ...data,
-          model: getModel(),
-        });
+        const result = await createOutlineAction(data);
         const newProject: BookProject = {
           ...data,
           id: nanoid(),
@@ -169,7 +166,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         console.error(error);
       }
     },
-    [toast, getModel]
+    [toast]
   );
 
   const updateProject = (payload: Partial<BookProject>) => {
@@ -258,7 +255,6 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           minWords: options.minWords ?? globalMinWords,
           temperature: options.temperature ?? temperature,
           seed: options.seed,
-          model: getModel(),
         };
 
         const result = await generateChapterContentAction(input);
@@ -282,7 +278,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
         throw error;
       }
     },
-    [state.project, updateChapter, toast, globalMinWords, temperature, seed, getModel]
+    [state.project, updateChapter, toast, globalMinWords, temperature, seed]
   );
 
   const generateSingleChapter = useCallback(

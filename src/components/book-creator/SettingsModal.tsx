@@ -18,13 +18,6 @@ import {Input} from '@/components/ui/input';
 import {Switch} from '@/components/ui/switch';
 import {Settings} from 'lucide-react';
 import {Slider} from '../ui/slider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
 
 export function SettingsModal() {
   const {
@@ -36,34 +29,17 @@ export function SettingsModal() {
     setTemperature,
     seed,
     setSeed,
-    model,
-    setModel,
-    ollamaHost,
-    setOllamaHost,
-    ollamaModel,
-    setOllamaModel,
   } = useSettings();
 
   const [isOpen, setIsOpen] = useState(false);
   const [localMinWords, setLocalMinWords] = useState(globalMinWords);
   const [localTemp, setLocalTemp] = useState(temperature);
   const [localSeed, setLocalSeed] = useState(seed);
-  const [localModel, setLocalModel] = useState(model);
-  const [localOllamaHost, setLocalOllamaHost] = useState(ollamaHost);
-  const [localOllamaModel, setLocalOllamaModel] = useState(ollamaModel);
 
   const handleSave = () => {
     setGlobalMinWords(localMinWords);
     setTemperature(localTemp);
     setSeed(localSeed);
-    setModel(localModel);
-    setOllamaHost(localOllamaHost);
-    setOllamaModel(localOllamaModel);
-
-    // Quick reload to apply new Genkit plugin if host was changed
-    if (ollamaHost !== localOllamaHost) {
-      window.location.reload();
-    }
     setIsOpen(false);
   };
 
@@ -72,9 +48,6 @@ export function SettingsModal() {
       setLocalMinWords(globalMinWords);
       setLocalTemp(temperature);
       setLocalSeed(seed);
-      setLocalModel(model);
-      setLocalOllamaHost(ollamaHost);
-      setLocalOllamaModel(ollamaModel);
     }
     setIsOpen(open);
   };
@@ -99,46 +72,6 @@ export function SettingsModal() {
               onCheckedChange={checked => setTheme(checked ? 'dark' : 'light')}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label>Modelo de IA</Label>
-            <Select value={localModel} onValueChange={setLocalModel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o modelo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gemini">Gemini (Google AI)</SelectItem>
-                <SelectItem value="ollama">Ollama (Local)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {localModel === 'ollama' && (
-            <div className="p-4 border rounded-md space-y-4 bg-muted/50">
-              <h4 className="font-semibold">Configurações do Ollama</h4>
-              <div className="space-y-2">
-                <Label htmlFor="ollama-host">Host</Label>
-                <Input
-                  id="ollama-host"
-                  placeholder="Ex: http://127.0.0.1:11434"
-                  value={localOllamaHost || ''}
-                  onChange={e => setLocalOllamaHost(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ollama-model">Nome do Modelo</Label>
-                <Input
-                  id="ollama-model"
-                  placeholder="Ex: llama3"
-                  value={localOllamaModel || ''}
-                  onChange={e => setLocalOllamaModel(e.target.value)}
-                />
-                 <p className="text-sm text-muted-foreground">
-                    Certifique-se que este modelo está instalado no Ollama.
-                 </p>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="global-min-words">

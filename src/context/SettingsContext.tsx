@@ -7,11 +7,9 @@ import {
   useState,
   useEffect,
   ReactNode,
-  useCallback,
 } from 'react';
 
 type Theme = 'light' | 'dark';
-type ModelProvider = 'gemini' | 'ollama';
 
 type SettingsContextType = {
   theme: Theme;
@@ -22,13 +20,6 @@ type SettingsContextType = {
   setTemperature: (temp: number) => void;
   seed?: number;
   setSeed: (seed?: number) => void;
-  model: ModelProvider;
-  setModel: (model: ModelProvider) => void;
-  ollamaHost?: string;
-  setOllamaHost: (host?: string) => void;
-  ollamaModel?: string;
-  setOllamaModel: (model?: string) => void;
-  getModel: () => string;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -51,13 +42,6 @@ const getInitialTheme = (): Theme => {
     }
   }
   return 'light';
-};
-
-const getInitialString = (key: string): string | undefined => {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage.getItem(key) || undefined;
-  }
-  return undefined;
 };
 
 const getInitialNumber = (key: string): number | undefined => {
@@ -93,15 +77,6 @@ export function SettingsProvider({children}: {children: ReactNode}) {
   const [seed, setSeed] = useState<number | undefined>(() =>
     getInitialNumber('seed')
   );
-  const [model, setModel] = useState<ModelProvider>(
-    () => (getInitialString('model') as ModelProvider) || 'gemini'
-  );
-  const [ollamaHost, setOllamaHost] = useState<string | undefined>(() =>
-    getInitialString('ollamaHost')
-  );
-  const [ollamaModel, setOllamaModel] = useState<string | undefined>(() =>
-    getInitialString('ollamaModel')
-  );
 
   const rawSetTheme = (rawTheme: Theme) => {
     const root = window.document.documentElement;
@@ -116,19 +91,6 @@ export function SettingsProvider({children}: {children: ReactNode}) {
   const handleSetTheme = (newTheme: Theme) => {
     setTheme(newTheme);
     rawSetTheme(newTheme);
-  };
-
-  const handleSetString = (
-    key: string,
-    value: string | undefined,
-    setter: (v?: string) => void
-  ) => {
-    setter(value);
-    if (value) {
-      localStorage.setItem(key, value);
-    } else {
-      localStorage.removeItem(key);
-    }
   };
 
   const handleSetNumber = (
@@ -148,13 +110,6 @@ export function SettingsProvider({children}: {children: ReactNode}) {
     rawSetTheme(theme);
   }, [theme]);
 
-  const getModel = useCallback((): string => {
-    if (model === 'ollama') {
-      return `ollama/${ollamaModel || ''}`;
-    }
-    return 'googleai/gemini-1.5-flash';
-  }, [model, ollamaModel]);
-
   return (
     <SettingsContext.Provider
       value={{
@@ -168,15 +123,6 @@ export function SettingsProvider({children}: {children: ReactNode}) {
           handleSetNumber('temperature', v, setTemperature),
         seed,
         setSeed: (v?: number) => handleSetNumber('seed', v, setSeed),
-        model,
-        setModel: (v: ModelProvider) => handleSetString('model', v, setModel),
-        ollamaHost,
-        setOllamaHost: (v?: string) =>
-          handleSetString('ollamaHost', v, setOllamaHost),
-        ollamaModel,
-        setOllamaModel: (v?: string) =>
-          handleSetString('ollamaModel', v, setOllamaModel),
-        getModel,
       }}
     >
       {children}

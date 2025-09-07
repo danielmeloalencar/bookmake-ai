@@ -1,4 +1,3 @@
-// src/ai/flows/iteratively-generate-content.ts
 'use server';
 
 /**
@@ -47,7 +46,6 @@ const GenerateChapterContentInputSchema = z.object({
     .optional()
     .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
-  model: z.string().optional().describe('The model to use for generation.'),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -114,7 +112,6 @@ const generateChapterContentFlow = ai.defineFlow(
 
     const {output} = await ai.generate({
       prompt: finalPrompt,
-      model: input.model || 'googleai/gemini-1.5-flash',
       output: {
         schema: GenerateChapterContentOutputSchema,
       },
