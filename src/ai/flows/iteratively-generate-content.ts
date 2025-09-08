@@ -136,21 +136,32 @@ const generateChapterContentFlow = ai.defineFlow(
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
     const mcpHost = getMcpHost(settings.mcp);
+    
+    // Ollama models might not support tool use, so we conditionally add tools
+    const shouldUseTools = settings.aiProvider === 'google';
 
     const {output} = await ai.generate({
       prompt: finalPrompt,
       model: modelName,
-      tools: await mcpHost.getActiveTools(ai),
-      resources: await mcpHost.getActiveResources(ai),
-      output: {
-        schema: GenerateChapterContentOutputSchema,
-      },
+      ...(shouldUseTools && {
+         tools: await mcpHost.getActiveTools(ai),
+         resources: await mcpHost.getActiveResources(ai),
+         output: {
+            schema: GenerateChapterContentOutputSchema,
+         },
+      }),
       config: {
         temperature: temperature,
         seed: seed,
       },
     });
 
-    return output!;
+    if (shouldUseTools) {
+       return output!;
+    }
+    
+    // For non-tool-using models, the output is directly in the text
+    const textOutput = (output as any).text;
+    return { chapterContent: textOutput };
   }
 );
