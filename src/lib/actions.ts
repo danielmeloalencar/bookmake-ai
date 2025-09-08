@@ -20,10 +20,12 @@ type CreateOutlineInput = {
   numberOfChapters: number;
 }
 
+type SerializableSettings = Omit<Settings, 'theme'>;
+
 
 // Wrapper to ensure Genkit is configured before running an action
 async function withConfiguredGenkit<T, U>(
-  settings: Omit<Settings, 'theme'>,
+  settings: SerializableSettings,
   action: (input: T) => Promise<U>,
   input: T
 ): Promise<U> {
@@ -41,7 +43,7 @@ async function withConfiguredGenkit<T, U>(
 
 export async function createOutlineAction(
   input: CreateOutlineInput,
-  settings: Omit<Settings, 'theme'>
+  settings: SerializableSettings
 ) {
   try {
     const modelName = settings.aiProvider === 'ollama' ? `ollama/${settings.ollamaModel}` : 'gemini-1.5-flash';
@@ -63,7 +65,7 @@ export async function generateChapterContentAction({
   settings,
 }: {
   input: GenerateChapterContentInput;
-  settings: Omit<Settings, 'theme'>;
+  settings: SerializableSettings;
 }) {
   try {
     const output = await withConfiguredGenkit(
