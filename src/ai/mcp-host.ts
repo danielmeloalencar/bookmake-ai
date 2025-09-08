@@ -10,8 +10,8 @@ import {McpConfig} from '@/lib/types';
 let mcpHost: GenkitMcpHost | null = null;
 let currentConfig: string | null = null;
 
-// Defines all possible MCP servers that can be enabled.
-const ALL_SERVERS: Record<keyof McpConfig, McpServerConfig> = {
+// Defines all possible built-in MCP servers that can be enabled.
+const ALL_SERVERS: Record<string, McpServerConfig> = {
   fs: {
     command: 'npx',
     args: ['-y', '@modelcontextprotocol/server-filesystem', process.cwd()],
@@ -28,7 +28,7 @@ const ALL_SERVERS: Record<keyof McpConfig, McpServerConfig> = {
  * @param config - The desired configuration for MCP servers.
  * @returns The singleton GenkitMcpHost instance.
  */
-export function getMcpHost(config: McpConfig = {fs: false, memory: false}): GenkitMcpHost {
+export function getMcpHost(config: McpConfig): GenkitMcpHost {
   const configKey = JSON.stringify(config);
 
   if (mcpHost && currentConfig === configKey) {
@@ -41,11 +41,24 @@ export function getMcpHost(config: McpConfig = {fs: false, memory: false}): Genk
   }
 
   const activeServers: Record<string, McpServerConfig> = {};
-  for (const key in config) {
-    if (config[key as keyof McpConfig]) {
-        activeServers[key] = ALL_SERVERS[key as keyof McpConfig];
-    }
+  
+  // Add built-in servers if enabled
+  if (config.fs) {
+    activeServers.fs = ALL_SERVERS.fs;
   }
+  if (config.memory) {
+    activeServers.memory = ALL_SERVERS.memory;
+  }
+
+  // Add local custom servers
+  config.localServers.forEach(server => {
+    activeServers[server.name] = {
+      command: server.command,
+      // Split args string into an array
+      args: server.args.split(' '),
+    };
+  });
+
 
   console.log('Initializing MCP host with servers:', Object.keys(activeServers));
   mcpHost = createMcpHost({

@@ -9,7 +9,8 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
-import type {McpConfig, Settings} from '@/lib/types';
+import type { McpConfig, Settings, LocalMcpServer } from '@/lib/types';
+import { nanoid } from 'nanoid';
 
 type SettingsContextType = Settings & {
   setTheme: (theme: 'light' | 'dark') => void;
@@ -17,7 +18,21 @@ type SettingsContextType = Settings & {
   setOllamaHost: (host: string) => void;
   setOllamaModel: (model: string) => void;
   setMcpConfig: (config: McpConfig) => void;
-  getSerializableSettings: () => Omit<Settings, 'setTheme' | 'setAiProvider' | 'setOllamaHost' | 'setOllamaModel' | 'setMcpConfig' | 'getSerializableSettings'>;
+  getSerializableSettings: () => Omit<
+    Settings,
+    | 'setTheme'
+    | 'setAiProvider'
+    | 'setOllamaHost'
+    | 'setOllamaModel'
+    | 'setMcpConfig'
+    | 'getSerializableSettings'
+    | 'addLocalMcpServer'
+    | 'updateLocalMcpServer'
+    | 'removeLocalMcpServer'
+  >;
+  addLocalMcpServer: (server: Omit<LocalMcpServer, 'id'>) => void;
+  updateLocalMcpServer: (server: LocalMcpServer) => void;
+  removeLocalMcpServer: (id: string) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(
@@ -30,12 +45,12 @@ const getInitialState = (): Settings => {
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-         return {
-            theme: parsed.theme || 'dark',
-            aiProvider: parsed.aiProvider || 'google',
-            ollamaHost: parsed.ollamaHost || 'http://127.0.0.1:11434',
-            ollamaModel: parsed.ollamaModel || 'gemma',
-            mcp: parsed.mcp || { fs: false, memory: false },
+        return {
+          theme: parsed.theme || 'dark',
+          aiProvider: parsed.aiProvider || 'google',
+          ollamaHost: parsed.ollamaHost || 'http://127.0.0.1:11434',
+          ollamaModel: parsed.ollamaModel || 'gemma',
+          mcp: parsed.mcp || { fs: false, memory: false, localServers: [] },
         };
       } catch (e) {
         // Fallback to default if parsing fails
@@ -48,11 +63,11 @@ const getInitialState = (): Settings => {
     aiProvider: 'google',
     ollamaHost: 'http://127.0.0.1:11434',
     ollamaModel: 'gemma',
-    mcp: { fs: false, memory: false },
+    mcp: { fs: false, memory: false, localServers: [] },
   };
 };
 
-export function SettingsProvider({children}: {children: ReactNode}) {
+export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(getInitialState);
 
   // Apply theme to DOM
@@ -69,30 +84,63 @@ export function SettingsProvider({children}: {children: ReactNode}) {
   }, [settings]);
 
   const setTheme = useCallback((theme: 'light' | 'dark') => {
-    setSettings(s => ({...s, theme}));
+    setSettings((s) => ({ ...s, theme }));
   }, []);
 
   const setAiProvider = useCallback((provider: 'google' | 'ollama') => {
-    setSettings(s => ({...s, aiProvider: provider}));
+    setSettings((s) => ({ ...s, aiProvider: provider }));
   }, []);
 
   const setOllamaHost = useCallback((host: string) => {
-    setSettings(s => ({...s, ollamaHost: host}));
+    setSettings((s) => ({ ...s, ollamaHost: host }));
   }, []);
 
   const setOllamaModel = useCallback((model: string) => {
-    setSettings(s => ({...s, ollamaModel: model}));
+    setSettings((s) => ({ ...s, ollamaModel: model }));
   }, []);
 
   const setMcpConfig = useCallback((config: McpConfig) => {
-    setSettings(s => ({...s, mcp: config}));
+    setSettings((s) => ({ ...s, mcp: config }));
   }, []);
+
+  const addLocalMcpServer = useCallback(
+    (server: Omit<LocalMcpServer, 'id'>) => {
+      const newServer = { ...server, id: nanoid() };
+      setSettings((s) => ({
+        ...s,
+        mcp: { ...s.mcp, localServers: [...s.mcp.localServers, newServer] },
+      }));
+    },
+    []
+  );
+
+  const updateLocalMcpServer = useCallback((server: LocalMcpServer) => {
+    setSettings((s) => ({
+      ...s,
+      mcp: {
+        ...s.mcp,
+        localServers: s.mcp.localServers.map((ls) =>
+          ls.id === server.id ? server : ls
+        ),
+      },
+    }));
+  }, []);
+
+  const removeLocalMcpServer = useCallback((id: string) => {
+    setSettings((s) => ({
+      ...s,
+      mcp: {
+        ...s.mcp,
+        localServers: s.mcp.localServers.filter((ls) => ls.id !== id),
+      },
+    }));
+  }, []);
+
 
   const getSerializableSettings = useCallback(() => {
     const { theme, aiProvider, ollamaHost, ollamaModel, mcp } = settings;
     return { theme, aiProvider, ollamaHost, ollamaModel, mcp };
   }, [settings]);
-
 
   return (
     <SettingsContext.Provider
@@ -104,6 +152,9 @@ export function SettingsProvider({children}: {children: ReactNode}) {
         setOllamaModel,
         setMcpConfig,
         getSerializableSettings,
+        addLocalMcpServer,
+        updateLocalMcpServer,
+        removeLocalMcpServer,
       }}
     >
       {children}

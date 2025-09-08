@@ -20,10 +20,19 @@ export interface BookProject {
   outline: Chapter[];
 }
 
+export interface LocalMcpServer {
+  id: string;
+  name: string;
+  command: string;
+  args: string; // Storing as a string for easier editing in input
+}
+
 export interface McpConfig {
   fs: boolean;
   memory: boolean;
+  localServers: LocalMcpServer[];
 }
+
 
 export interface Settings {
   theme: 'light' | 'dark';
