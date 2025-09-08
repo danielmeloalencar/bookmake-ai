@@ -1,3 +1,4 @@
+
 import {genkit, type Plugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
@@ -29,6 +30,7 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
         ollama({
           models: [{name: ollamaModel, type: 'generate'}],
           serverAddress: ollamaHost,
+          timeout: 300000, // 5 minutes
         })
       );
     } catch (error) {

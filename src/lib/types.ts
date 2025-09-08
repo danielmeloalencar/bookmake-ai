@@ -24,7 +24,8 @@ export interface LocalMcpServer {
   id: string;
   name: string;
   command: string;
-  args: string[]; 
+  args: string[];
+  timeout?: number;
 }
 
 export interface McpConfig {
