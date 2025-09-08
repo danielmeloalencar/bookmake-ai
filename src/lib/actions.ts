@@ -31,6 +31,7 @@ async function withConfiguredGenkit<T, U>(
       aiProvider: settings.aiProvider,
       ollamaHost: settings.ollamaHost,
       ollamaModel: settings.ollamaModel,
+      ollamaTimeout: settings.ollamaTimeout,
     });
   // Also ensure MCP host is configured
   getMcpHost(settings.mcp);

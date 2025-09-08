@@ -17,6 +17,7 @@ type SettingsContextType = Settings & {
   setAiProvider: (provider: 'google' | 'ollama') => void;
   setOllamaHost: (host: string) => void;
   setOllamaModel: (model: string) => void;
+  setOllamaTimeout: (timeout?: number) => void;
   setMcpConfig: (config: McpConfig) => void;
   getSerializableSettings: () => Omit<
     Settings,
@@ -24,6 +25,7 @@ type SettingsContextType = Settings & {
     | 'setAiProvider'
     | 'setOllamaHost'
     | 'setOllamaModel'
+    | 'setOllamaTimeout'
     | 'setMcpConfig'
     | 'getSerializableSettings'
     | 'addLocalMcpServer'
@@ -44,6 +46,7 @@ const defaultSettings: Omit<Settings, 'mcp'> & { mcp: McpConfig } = {
     aiProvider: 'google',
     ollamaHost: 'http://127.0.0.1:11434',
     ollamaModel: 'gemma',
+    ollamaTimeout: 600000, // 10 minutes
     mcp: { fs: false, memory: false, localServers: [] },
 }
 
@@ -97,6 +100,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((s) => ({ ...s, ollamaModel: model }));
   }, []);
 
+  const setOllamaTimeout = useCallback((timeout?: number) => {
+    setSettings(s => ({ ...s, ollamaTimeout: timeout }));
+  }, []);
+
   const setMcpConfig = useCallback((config: McpConfig) => {
     setSettings((s) => ({ ...s, mcp: config }));
   }, []);
@@ -136,8 +143,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
 
   const getSerializableSettings = useCallback(() => {
-    const { theme, aiProvider, ollamaHost, ollamaModel, mcp } = settings;
-    return { theme, aiProvider, ollamaHost, ollamaModel, mcp };
+    const { theme, aiProvider, ollamaHost, ollamaModel, ollamaTimeout, mcp } = settings;
+    return { theme, aiProvider, ollamaHost, ollamaModel, ollamaTimeout, mcp };
   }, [settings]);
 
   return (
@@ -148,6 +155,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setAiProvider,
         setOllamaHost,
         setOllamaModel,
+        setOllamaTimeout,
         setMcpConfig,
         getSerializableSettings,
         addLocalMcpServer,

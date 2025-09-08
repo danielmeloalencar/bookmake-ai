@@ -45,7 +45,6 @@ function LocalMcpServerForm({
 }) {
   const [name, setName] = useState(server?.name || '');
   const [command, setCommand] = useState(server?.command || '');
-  const [timeout, setTimeoutValue] = useState(server?.timeout || '');
   const [args, setArgs] = useState(() => {
     const initialArgs = server?.args || [];
     // Ensure the array has exactly MAX_ARGS elements for the form
@@ -65,7 +64,6 @@ function LocalMcpServerForm({
         id: server?.id || nanoid(),
         name,
         command,
-        timeout: timeout ? Number(timeout) : undefined,
         args: args.filter(arg => arg.trim() !== ''), // Save only non-empty args
       });
     }
@@ -97,21 +95,6 @@ function LocalMcpServerForm({
                 className="col-span-3"
                 placeholder="ex: npx"
                 />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="mcp-timeout" className="text-right">
-                    Timeout
-                </Label>
-                 <div className="col-span-3">
-                    <Input
-                        id="mcp-timeout"
-                        type="number"
-                        value={timeout}
-                        onChange={(e) => setTimeoutValue(e.target.value)}
-                        placeholder="Opcional (ex: 600)"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Tempo em segundos. Deixe em branco para o padrão.</p>
-                 </div>
             </div>
 
             {args.map((arg, index) => (
@@ -187,6 +170,8 @@ export function SettingsModal() {
     setOllamaHost,
     ollamaModel,
     setOllamaModel,
+    ollamaTimeout,
+    setOllamaTimeout,
     mcp,
     setMcpConfig,
     removeLocalMcpServer,
@@ -235,7 +220,7 @@ export function SettingsModal() {
             </RadioGroup>
 
             {aiProvider === 'ollama' && (
-              <div className="space-y-4 pt-4">
+              <div className="space-y-4 pt-4 border-t mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="ollama-host">Endereço do Host Ollama</Label>
                   <Input
@@ -253,6 +238,19 @@ export function SettingsModal() {
                     onChange={(e) => setOllamaModel(e.target.value)}
                     placeholder="ex: gemma"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ollama-timeout">Timeout (em segundos)</Label>
+                  <Input
+                    id="ollama-timeout"
+                    type="number"
+                    value={ollamaTimeout ? ollamaTimeout / 1000 : ''}
+                    onChange={(e) => setOllamaTimeout(e.target.value ? parseInt(e.target.value) * 1000 : undefined)}
+                    placeholder="Padrão: 600"
+                  />
+                   <p className="text-xs text-muted-foreground">
+                    Tempo de espera pela resposta do modelo. Aumente se estiver recebendo erros de timeout.
+                  </p>
                 </div>
               </div>
             )}

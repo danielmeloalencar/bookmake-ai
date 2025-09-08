@@ -25,7 +25,6 @@ export interface LocalMcpServer {
   name: string;
   command: string;
   args: string[];
-  timeout?: number;
 }
 
 export interface McpConfig {
@@ -40,5 +39,6 @@ export interface Settings {
   aiProvider: 'google' | 'ollama';
   ollamaHost?: string;
   ollamaModel?: string;
+  ollamaTimeout?: number;
   mcp: McpConfig;
 }
