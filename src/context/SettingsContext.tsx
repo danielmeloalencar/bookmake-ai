@@ -39,32 +39,30 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
   undefined
 );
 
+const defaultSettings: Omit<Settings, 'mcp'> & { mcp: McpConfig } = {
+    theme: 'dark',
+    aiProvider: 'google',
+    ollamaHost: 'http://127.0.0.1:11434',
+    ollamaModel: 'gemma',
+    mcp: { fs: false, memory: false, localServers: [] },
+}
+
 const getInitialState = (): Settings => {
   if (typeof window !== 'undefined' && window.localStorage) {
     const savedSettings = window.localStorage.getItem('livromagico_settings');
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        return {
-          theme: parsed.theme || 'dark',
-          aiProvider: parsed.aiProvider || 'google',
-          ollamaHost: parsed.ollamaHost || 'http://127.0.0.1:11434',
-          ollamaModel: parsed.ollamaModel || 'gemma',
-          mcp: parsed.mcp || { fs: false, memory: false, localServers: [] },
-        };
+        // Merge saved settings with defaults to prevent undefined properties
+        const mcp = { ...defaultSettings.mcp, ...(parsed.mcp || {}) };
+        return { ...defaultSettings, ...parsed, mcp };
       } catch (e) {
         // Fallback to default if parsing fails
       }
     }
   }
   // Default state
-  return {
-    theme: 'dark',
-    aiProvider: 'google',
-    ollamaHost: 'http://127.0.0.1:11434',
-    ollamaModel: 'gemma',
-    mcp: { fs: false, memory: false, localServers: [] },
-  };
+  return defaultSettings;
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
