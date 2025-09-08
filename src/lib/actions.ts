@@ -58,10 +58,13 @@ export async function createOutlineAction(
   }
 }
 
-export async function generateChapterContentAction(
-  input: GenerateChapterContentInput,
-  settings: Omit<Settings, 'theme'>
-) {
+export async function generateChapterContentAction({
+  input,
+  settings,
+}: {
+  input: GenerateChapterContentInput;
+  settings: Omit<Settings, 'theme'>;
+}) {
   try {
     const output = await withConfiguredGenkit(
       settings,

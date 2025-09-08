@@ -267,7 +267,7 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           modelName: modelName,
         };
 
-        const result = await generateChapterContentAction(input, settings);
+        const result = await generateChapterContentAction({input, settings});
 
         updateChapter(chapter.id, {
           content: result.chapterContent,
