@@ -15,6 +15,26 @@ import {ai} from '@/ai/genkit';
 import {getMcpHost} from '@/ai/mcp-host';
 import {z} from 'genkit';
 import Handlebars from 'handlebars';
+import type { Settings } from '@/lib/types';
+
+
+const SerializableSettingsSchema = z.object({
+  aiProvider: z.enum(['google', 'ollama']),
+  ollamaHost: z.string().optional(),
+  ollamaModel: z.string().optional(),
+  ollamaTimeout: z.number().optional(),
+  mcp: z.object({
+    fs: z.boolean(),
+    memory: z.boolean(),
+    localServers: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      command: z.string(),
+      args: z.array(z.string()),
+    })),
+  }),
+});
+
 
 const GenerateChapterContentInputSchema = z.object({
   bookDescription: z.string().describe('A high-level description of the book.'),
@@ -49,6 +69,7 @@ const GenerateChapterContentInputSchema = z.object({
     .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
   modelName: z.string().describe('The model to use for generation.'),
+  settings: SerializableSettingsSchema.describe("The application settings to configure Genkit and MCP."),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -111,10 +132,10 @@ const generateChapterContentFlow = ai.defineFlow(
     inputSchema: GenerateChapterContentInputSchema,
     outputSchema: GenerateChapterContentOutputSchema,
   },
-  async ({modelName, temperature, seed, ...input}) => {
+  async ({modelName, temperature, seed, settings, ...input}) => {
     const template = Handlebars.compile(promptTemplate);
     const finalPrompt = template(input);
-    const mcpHost = getMcpHost();
+    const mcpHost = getMcpHost(settings.mcp);
 
     const {output} = await ai.generate({
       prompt: finalPrompt,

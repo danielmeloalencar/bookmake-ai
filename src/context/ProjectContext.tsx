@@ -265,9 +265,10 @@ export function ProjectProvider({children}: {children: React.ReactNode}) {
           temperature: options.temperature,
           seed: options.seed,
           modelName: modelName,
+          settings: settings,
         };
 
-        const result = await generateChapterContentAction({input, settings});
+        const result = await generateChapterContentAction(input);
 
         updateChapter(chapter.id, {
           content: result.chapterContent,

@@ -24,11 +24,11 @@ type SerializableSettings = Omit<Settings, 'theme'>;
 
 
 // Wrapper to ensure Genkit is configured before running an action
-async function withConfiguredGenkit<T, U>(
-  settings: SerializableSettings,
-  action: (input: T) => Promise<U>,
+async function withConfiguredGenkit<T extends { settings: SerializableSettings }>(
+  action: (input: T) => Promise<any>,
   input: T
-): Promise<U> {
+): Promise<any> {
+  const { settings, ...rest } = input;
   await configureGenkit({
       aiProvider: settings.aiProvider,
       ollamaHost: settings.ollamaHost,
@@ -49,9 +49,8 @@ export async function createOutlineAction(
     const modelName = settings.aiProvider === 'ollama' ? `ollama/${settings.ollamaModel}` : 'gemini-1.5-flash';
     const actionInput = { ...input, modelName };
     const output = await withConfiguredGenkit(
-      settings,
-      generateInitialOutline,
-      actionInput
+      (wrappedInput) => generateInitialOutline(wrappedInput as any),
+      {...actionInput, settings } as any
     );
     return output;
   } catch (error: any) {
@@ -60,16 +59,11 @@ export async function createOutlineAction(
   }
 }
 
-export async function generateChapterContentAction({
-  input,
-  settings,
-}: {
-  input: GenerateChapterContentInput;
-  settings: SerializableSettings;
-}) {
+export async function generateChapterContentAction(
+  input: GenerateChapterContentInput
+) {
   try {
     const output = await withConfiguredGenkit(
-      settings,
       generateChapterContent,
       input
     );
