@@ -51,13 +51,17 @@ export function getMcpHost(config: McpConfig): GenkitMcpHost {
   }
 
   // Add local custom servers
-  config.localServers.forEach(server => {
-    activeServers[server.name] = {
-      command: server.command,
-      // Split args string into an array
-      args: server.args.split(' '),
-    };
-  });
+  if (config.localServers) {
+    config.localServers.forEach(server => {
+      // Regex to split args string by spaces, but preserve quoted strings
+      const argsArray = server.args.match(/(".*?"|[^"\s]+)+(?=\s*|\s*$)/g) || [];
+
+      activeServers[server.name] = {
+        command: server.command,
+        args: argsArray,
+      };
+    });
+  }
 
 
   console.log('Initializing MCP host with servers:', Object.keys(activeServers));
