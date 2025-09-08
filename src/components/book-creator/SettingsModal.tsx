@@ -30,6 +30,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { ScrollArea } from '../ui/scroll-area';
+
+const MAX_ARGS = 5;
 
 function LocalMcpServerForm({
   server,
@@ -42,7 +45,18 @@ function LocalMcpServerForm({
 }) {
   const [name, setName] = useState(server?.name || '');
   const [command, setCommand] = useState(server?.command || '');
-  const [args, setArgs] = useState(server?.args || '');
+  const [args, setArgs] = useState(() => {
+    const initialArgs = server?.args || [];
+    // Ensure the array has exactly MAX_ARGS elements for the form
+    return Array.from({ length: MAX_ARGS }, (_, i) => initialArgs[i] || '');
+  });
+
+
+  const handleArgChange = (index: number, value: string) => {
+    const newArgs = [...args];
+    newArgs[index] = value;
+    setArgs(newArgs);
+  };
 
   const handleSave = () => {
     if (name && command) {
@@ -50,56 +64,61 @@ function LocalMcpServerForm({
         id: server?.id || nanoid(),
         name,
         command,
-        args,
+        args: args.filter(arg => arg.trim() !== ''), // Save only non-empty args
       });
     }
   };
 
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="mcp-name" className="text-right">
-          Nome
-        </Label>
-        <Input
-          id="mcp-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="col-span-3"
-          placeholder="Um nome único (ex: meu-servidor)"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="mcp-command" className="text-right">
-          Comando
-        </Label>
-        <Input
-          id="mcp-command"
-          value={command}
-          onChange={(e) => setCommand(e.target.value)}
-          className="col-span-3"
-          placeholder="ex: npx"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="mcp-args" className="text-right">
-          Argumentos
-        </Label>
-        <Input
-          id="mcp-args"
-          value={args}
-          onChange={(e) => setArgs(e.target.value)}
-          className="col-span-3"
-          placeholder="ex: -y @modelcontextprotocol/server-memory"
-        />
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button onClick={handleSave}>Salvar</Button>
-      </DialogFooter>
-    </div>
+    <ScrollArea className="max-h-[70vh]">
+        <div className="grid gap-4 py-4 pr-6">
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mcp-name" className="text-right">
+                Nome
+                </Label>
+                <Input
+                id="mcp-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
+                placeholder="Um nome único (ex: meu-servidor)"
+                />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mcp-command" className="text-right">
+                Comando
+                </Label>
+                <Input
+                id="mcp-command"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                className="col-span-3"
+                placeholder="ex: npx"
+                />
+            </div>
+
+            {args.map((arg, index) => (
+                 <div key={index} className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor={`mcp-arg-${index}`} className="text-right">
+                        Arg. {index + 1}
+                    </Label>
+                    <Input
+                    id={`mcp-arg-${index}`}
+                    value={arg}
+                    onChange={(e) => handleArgChange(index, e.target.value)}
+                    className="col-span-3"
+                    placeholder="Argumento opcional"
+                    />
+                </div>
+            ))}
+        </div>
+        <DialogFooter className="pr-6">
+            <Button variant="outline" onClick={onCancel}>
+            Cancelar
+            </Button>
+            <Button onClick={handleSave}>Salvar</Button>
+        </DialogFooter>
+    </ScrollArea>
   );
 }
 
@@ -274,7 +293,7 @@ export function SettingsModal() {
                            <div key={server.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
                                 <div>
                                     <p className="font-medium">{server.name}</p>
-                                    <p className="text-xs text-muted-foreground font-mono">{`${server.command} ${server.args}`}</p>
+                                    <p className="text-xs text-muted-foreground font-mono">{`${server.command} ${server.args.join(' ')}`}</p>
                                 </div>
                                 <div className="flex items-center">
                                     <ManageLocalMcpServerDialog server={server}>

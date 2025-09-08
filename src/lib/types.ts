@@ -24,7 +24,7 @@ export interface LocalMcpServer {
   id: string;
   name: string;
   command: string;
-  args: string; // Storing as a string for easier editing in input
+  args: string[]; 
 }
 
 export interface McpConfig {
