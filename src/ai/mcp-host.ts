@@ -56,6 +56,7 @@ export function getMcpHost(config: McpConfig): GenkitMcpHost {
       activeServers[server.name] = {
         command: server.command,
         args: server.args.filter(arg => arg.trim() !== ''), // Filter out empty strings
+        timeout: server.timeout ? server.timeout * 1000 : undefined, // convert seconds to ms
       };
     });
   }

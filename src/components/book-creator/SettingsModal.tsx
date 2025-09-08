@@ -45,6 +45,7 @@ function LocalMcpServerForm({
 }) {
   const [name, setName] = useState(server?.name || '');
   const [command, setCommand] = useState(server?.command || '');
+  const [timeout, setTimeoutValue] = useState(server?.timeout || '');
   const [args, setArgs] = useState(() => {
     const initialArgs = server?.args || [];
     // Ensure the array has exactly MAX_ARGS elements for the form
@@ -64,6 +65,7 @@ function LocalMcpServerForm({
         id: server?.id || nanoid(),
         name,
         command,
+        timeout: timeout ? Number(timeout) : undefined,
         args: args.filter(arg => arg.trim() !== ''), // Save only non-empty args
       });
     }
@@ -95,6 +97,21 @@ function LocalMcpServerForm({
                 className="col-span-3"
                 placeholder="ex: npx"
                 />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="mcp-timeout" className="text-right">
+                    Timeout
+                </Label>
+                 <div className="col-span-3">
+                    <Input
+                        id="mcp-timeout"
+                        type="number"
+                        value={timeout}
+                        onChange={(e) => setTimeoutValue(e.target.value)}
+                        placeholder="Opcional (ex: 600)"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Tempo em segundos. Deixe em branco para o padrão.</p>
+                 </div>
             </div>
 
             {args.map((arg, index) => (
