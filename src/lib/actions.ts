@@ -30,11 +30,13 @@ async function withConfiguredGenkit<T extends { settings: SerializableSettings }
   const { settings, ...rest } = input;
   await configureGenkit({
       aiProvider: settings.aiProvider,
-      ollamaHost: settings.ollamaHost,
+      ollamaHost: settings.aiProvider === 'ollama' ? settings.ollamaHost || 'http://127.0.0.1:11434' : undefined,
       ollamaModel: settings.ollamaModel,
     });
 
-  return action(input);
+  const finalInput = { ...rest, settings };
+
+  return action(finalInput as T);
 }
 
 export async function createOutlineAction(
