@@ -1,6 +1,7 @@
 
 import {genkit, type Plugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
+import {openAICompatible} from '@genkit-ai/compat-oai';
 
 interface GenkitConfig {
   aiProvider?: 'google' | 'ollama';
@@ -15,29 +16,13 @@ let configuredAi: any;
 export const configureGenkit = async (config: GenkitConfig = {}) => {
   const plugins: Plugin[] = [];
 
-  const {
-    aiProvider = 'google',
-    ollamaHost,
-    ollamaModel,
-  } = config;
+  const {aiProvider = 'google', ollamaHost, ollamaModel} = config;
 
   if (aiProvider === 'ollama' && ollamaHost && ollamaModel) {
-    try {
-      // Dynamically import ollama only when it's configured.
-      // This avoids Next.js trying to resolve the module when it's not needed.
-      const {ollama} = await import('genkitx-ollama');
-
-      plugins.push(
-        ollama({
-          models: [{name: ollamaModel, type: 'generate'}],
-          serverAddress: ollamaHost,
-        })
-      );
-    } catch (error) {
-      console.error("Failed to load Ollama plugin, falling back to Google AI", error);
-      // Fallback to Google AI if ollama plugin fails to load
-      plugins.push(googleAI());
-    }
+    // This configuration is currently causing issues and is disabled.
+    // Defaulting to Google AI.
+    plugins.push(googleAI());
+    
   } else {
     // Default to Google AI
     plugins.push(googleAI());
@@ -54,7 +39,7 @@ export const ai = new Proxy(
       if (!configuredAi) {
         // Configure with default if not already configured.
         // This is a safeguard for environments where configureGenkit isn't explicitly called.
-        configureGenkit(); 
+        configureGenkit();
       }
       return Reflect.get(configuredAi, prop);
     },

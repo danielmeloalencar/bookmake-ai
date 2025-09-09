@@ -10,7 +10,6 @@ import {
 } from '@/ai/flows/iteratively-generate-content';
 import {configureGenkit} from '@/ai/genkit';
 import type {Settings} from './types';
-import { getMcpHost } from '@/ai/mcp-host';
 
 type CreateOutlineInput = {
   bookDescription: string;
@@ -33,10 +32,7 @@ async function withConfiguredGenkit<T extends { settings: SerializableSettings }
       aiProvider: settings.aiProvider,
       ollamaHost: settings.ollamaHost,
       ollamaModel: settings.ollamaModel,
-      ollamaTimeout: settings.ollamaTimeout,
     });
-  // Also ensure MCP host is configured
-  getMcpHost(settings.mcp);
 
   return action(input);
 }
@@ -47,10 +43,11 @@ export async function createOutlineAction(
 ) {
   try {
     const modelName = settings.aiProvider === 'ollama' ? `ollama/${settings.ollamaModel}` : 'gemini-1.5-flash';
-    const actionInput = { ...input, modelName };
+    // This is a bit of a hack to pass settings through the action.
+    const actionInput = { ...input, modelName, settings };
     const output = await withConfiguredGenkit(
       (wrappedInput) => generateInitialOutline(wrappedInput as any),
-      {...actionInput, settings } as any
+      actionInput as any
     );
     return output;
   } catch (error: any) {

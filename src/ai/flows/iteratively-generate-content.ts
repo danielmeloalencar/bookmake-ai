@@ -12,9 +12,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {getMcpHost} from '@/ai/mcp-host';
 import {z} from 'genkit';
-import Handlebars from 'handlebars';
 import type { Settings } from '@/lib/types';
 
 
@@ -22,7 +20,6 @@ const SerializableSettingsSchema = z.object({
   aiProvider: z.enum(['google', 'ollama']),
   ollamaHost: z.string().optional(),
   ollamaModel: z.string().optional(),
-  ollamaTimeout: z.number().optional(),
   mcp: z.object({
     fs: z.boolean(),
     memory: z.boolean(),
@@ -69,7 +66,7 @@ const GenerateChapterContentInputSchema = z.object({
     .describe('Controls randomness. Higher values increase creativity.'),
   seed: z.number().optional().describe('A seed for deterministic generation.'),
   modelName: z.string().describe('The model to use for generation.'),
-  settings: SerializableSettingsSchema.describe("The application settings to configure Genkit and MCP."),
+  settings: SerializableSettingsSchema.describe("The application settings to configure Genkit."),
 });
 
 export type GenerateChapterContentInput = z.infer<
@@ -92,40 +89,6 @@ export async function generateChapterContent(
   return generateChapterContentFlow(input);
 }
 
-const promptTemplate = `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
-
-You have access to a set of tools from the Model Context Protocol (MCP). If the user's prompt or the context suggests that you need to access local files (e.g., "analyze this file", "read my project structure"), use the provided MCP tools to do so.
-
-Do not add chapter numbering in the content, just the text itself.
-
-If existing content for the chapter is provided as 'Current Content', your task is to refine or modify it based on the 'Additional Instructions'. If 'Current Content' is empty, you should write the chapter from scratch based on the outline.
-
-Book Description: {{bookDescription}}
-Target Audience: {{targetAudience}}
-Language: {{language}}
-DifficultyLevel: {{difficultyLevel}}
-
-Previous Chapters Content:
-{{{previousChaptersContent}}}
-
-Current Chapter Outline:
-{{{chapterOutline}}}
-
-{{#if currentContent}}
-Current Content (to be refined or modified):
-{{{currentContent}}}
-{{/if}}
-
-{{#if extraPrompt}}
-Additional Instructions: {{{extraPrompt}}}
-{{/if}}
-
-{{#if minWords}}
-The chapter content should have at least {{{minWords}}} words.
-{{/if}}
-
-Generate the new, complete content for the current chapter. The content should be well-written, engaging, and consistent with the overall book narrative.`;
-
 const generateChapterContentFlow = ai.defineFlow(
   {
     name: 'generateChapterContentFlow',
@@ -133,35 +96,56 @@ const generateChapterContentFlow = ai.defineFlow(
     outputSchema: GenerateChapterContentOutputSchema,
   },
   async ({modelName, temperature, seed, settings, ...input}) => {
-    const template = Handlebars.compile(promptTemplate);
-    const finalPrompt = template(input);
-    const mcpHost = getMcpHost(settings.mcp);
-    
-    // Ollama models might not support tool use, so we conditionally add tools
-    const shouldUseTools = settings.aiProvider === 'google';
+    let finalPrompt = `You are an AI assistant specialized in writing books. Your task is to write or refine the content for a specific chapter of a book, maintaining narrative coherence with the previous chapters. The book should be written with consideration of the target audience, language and difficulty level.
 
-    const {output} = await ai.generate({
+Do not add chapter numbering in the content, just the text itself.
+
+If existing content for the chapter is provided as 'Current Content', your task is to refine or modify it based on the 'Additional Instructions'. If 'Current Content' is empty, you should write the chapter from scratch based on the outline.
+
+Book Description: ${input.bookDescription}
+Target Audience: ${input.targetAudience}
+Language: ${input.language}
+DifficultyLevel: ${input.difficultyLevel}
+
+Previous Chapters Content:
+${input.previousChaptersContent}
+
+Current Chapter Outline:
+${input.chapterOutline}
+`;
+    
+    if (input.currentContent) {
+        finalPrompt += `
+Current Content (to be refined or modified):
+${input.currentContent}
+`;
+    }
+
+    if (input.extraPrompt) {
+        finalPrompt += `
+Additional Instructions: ${input.extraPrompt}
+`;
+    }
+
+    if (input.minWords) {
+        finalPrompt += `
+The chapter content should have at least ${input.minWords} words.
+`;
+    }
+
+    finalPrompt += `
+Generate the new, complete content for the current chapter. The content should be well-written, engaging, and consistent with the overall book narrative.`;
+
+    const generateResponse = await ai.generate({
       prompt: finalPrompt,
       model: modelName,
-      ...(shouldUseTools && {
-         tools: await mcpHost.getActiveTools(ai),
-         resources: await mcpHost.getActiveResources(ai),
-         output: {
-            schema: GenerateChapterContentOutputSchema,
-         },
-      }),
       config: {
         temperature: temperature,
         seed: seed,
       },
     });
 
-    if (shouldUseTools) {
-       return output!;
-    }
-    
-    // For non-tool-using models, the output is directly in the text
-    const textOutput = (output as any).text;
-    return { chapterContent: textOutput };
+
+    return { chapterContent: generateResponse.text };
   }
 );
