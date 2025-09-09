@@ -28,7 +28,7 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
       // This avoids Next.js trying to resolve the module when it's not needed.
       const {ollama} = await import('genkitx-ollama');
       
-      // Create a custom dispatcher with a long timeout
+      // Create a custom dispatcher with a long timeout for both headers and body
       const dispatcher = new Dispatcher({
         headersTimeout: 600000, // 10 minutes
         bodyTimeout: 600000, // 10 minutes
