@@ -1,9 +1,16 @@
+import dns from 'dns';
+
+// Prioriza o IPv4 para resolver o 'localhost', evitando problemas de conexão
+// com servidores locais (como o Ollama) em ambientes com IPv6.
+dns.setDefaultResultOrder('ipv4first');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // This is required to resolve a bug with server actions and timeouts.
+    // Aumenta o tempo limite das Server Actions para 10 minutos (600 segundos)
+    // para permitir que gerações de IA mais longas sejam concluídas.
     serverActions: {
-      bodySizeLimit: '4mb',
+        bodyTimeout: 600
     },
   },
 };

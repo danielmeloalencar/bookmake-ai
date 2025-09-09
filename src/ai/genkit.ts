@@ -1,7 +1,6 @@
 
 import {genkit, type Plugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {Dispatcher, request} from 'undici';
 
 interface GenkitConfig {
   aiProvider?: 'google' | 'ollama';
@@ -27,24 +26,11 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
       // Dynamically import ollama only when it's configured.
       // This avoids Next.js trying to resolve the module when it's not needed.
       const {ollama} = await import('genkitx-ollama');
-      
-      // Create a custom dispatcher with a long timeout for both headers and body
-      const dispatcher = new Dispatcher({
-        headersTimeout: 600000, // 10 minutes
-        bodyTimeout: 600000, // 10 minutes
-      });
-
-      // Create a custom fetch implementation
-      const customFetch: typeof fetch = (input, init) => {
-        return request(input, { ...init, dispatcher });
-      };
-
 
       plugins.push(
         ollama({
           models: [{name: ollamaModel, type: 'generate'}],
           serverAddress: ollamaHost,
-          fetch: customFetch,
         })
       );
     } catch (error) {
