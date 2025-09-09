@@ -142,8 +142,7 @@ Additional Instructions: ${input.extraPrompt}
     }
 
     if (input.minWords) {
-        finalPrompt += `
-The chapter content should have at least ${input.minWords} words.
+        finalPrompt += `The chapter content should have at least ${input.minWords} words.
 `;
     }
 
