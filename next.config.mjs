@@ -10,7 +10,7 @@ const nextConfig = {
     // Aumenta o tempo limite das Server Actions para 10 minutos (600 segundos)
     // para permitir que gerações de IA mais longas sejam concluídas.
     serverActions: {
-        bodyTimeout: 600
+        bodyTimeout: 60000
     },
   },
 };
