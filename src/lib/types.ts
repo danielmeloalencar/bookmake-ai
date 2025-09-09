@@ -39,6 +39,5 @@ export interface Settings {
   aiProvider: 'google' | 'ollama';
   ollamaHost?: string;
   ollamaModel?: string;
-  ollamaTimeout?: number;
   mcp: McpConfig;
 }

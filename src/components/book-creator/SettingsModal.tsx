@@ -170,8 +170,6 @@ export function SettingsModal() {
     setOllamaHost,
     ollamaModel,
     setOllamaModel,
-    ollamaTimeout,
-    setOllamaTimeout,
     mcp,
     setMcpConfig,
     removeLocalMcpServer,
@@ -238,19 +236,6 @@ export function SettingsModal() {
                     onChange={(e) => setOllamaModel(e.target.value)}
                     placeholder="ex: gemma"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ollama-timeout">Timeout (em segundos)</Label>
-                  <Input
-                    id="ollama-timeout"
-                    type="number"
-                    value={ollamaTimeout ? ollamaTimeout / 1000 : ''}
-                    onChange={(e) => setOllamaTimeout(e.target.value ? parseInt(e.target.value) * 1000 : undefined)}
-                    placeholder="Padrão: 600"
-                  />
-                   <p className="text-xs text-muted-foreground">
-                    Tempo de espera pela resposta do modelo. Aumente se estiver recebendo erros de timeout.
-                  </p>
                 </div>
               </div>
             )}

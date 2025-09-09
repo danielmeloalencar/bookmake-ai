@@ -6,7 +6,6 @@ interface GenkitConfig {
   aiProvider?: 'google' | 'ollama';
   ollamaHost?: string;
   ollamaModel?: string;
-  ollamaTimeout?: number;
 }
 
 // Store the configured instance
@@ -20,7 +19,6 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
     aiProvider = 'ollama',
     ollamaHost,
     ollamaModel,
-    ollamaTimeout,
   } = config;
 
   if (aiProvider === 'ollama' && ollamaHost && ollamaModel) {
@@ -32,7 +30,7 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
         ollama({
           models: [{name: ollamaModel, type: 'generate'}],
           serverAddress: ollamaHost,
-          timeout: ollamaTimeout,
+          timeout: 600000, // 10 minutes timeout
         })
       );
     } catch (error) {
