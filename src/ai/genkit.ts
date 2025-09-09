@@ -30,7 +30,6 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
         ollama({
           models: [{name: ollamaModel, type: 'generate'}],
           serverAddress: ollamaHost,
-          timeout: 600000, // 10 minutes timeout
         })
       );
     } catch (error) {

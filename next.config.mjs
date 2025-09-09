@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // A sua configuração existente sem a chave 'allowedDevOrigins' estará aqui.
-  // Por exemplo:
-  // reactStrictMode: true,
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '4mb', // Aumenta o limite do corpo da requisição
+            bodyTimeout: 600, // Aumenta o timeout para 600 segundos (10 minutos)
+        },
+    },
 };
 
 export default nextConfig;
