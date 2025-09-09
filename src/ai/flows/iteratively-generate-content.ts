@@ -14,6 +14,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { Settings } from '@/lib/types';
+import { createMcpHost } from '@genkit-ai/mcp';
 
 
 const SerializableSettingsSchema = z.object({
@@ -30,6 +31,19 @@ const SerializableSettingsSchema = z.object({
       args: z.array(z.string()),
     })),
   }),
+});
+
+
+const mcpHost = createMcpHost({
+  name: 'myMcpClients', // A name for the host plugin itself
+  mcpServers: {
+    // Each key (e.g., 'fs', 'git') becomes a namespace for the server's tools.
+    meuServidor: {
+    command: 'npx',
+     args: ['-y', 'tsx', 'D:/meu_mcp_node/main.ts',process.cwd()],
+    },
+
+  },
 });
 
 
@@ -139,13 +153,14 @@ Generate the new, complete content for the current chapter. The content should b
     const generateResponse = await ai.generate({
       prompt: finalPrompt,
       model: modelName,
+      tools: await mcpHost.getActiveTools(ai),      
       config: {
         temperature: temperature,
         seed: seed,
       },
     });
 
-
+    await mcpHost.close();
     return { chapterContent: generateResponse.text };
   }
 );
