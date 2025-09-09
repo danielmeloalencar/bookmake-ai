@@ -1,8 +1,7 @@
 
 import {genkit, type Plugin} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {ollama} from 'genkitx-ollama';
-import { setGlobalDispatcher, Agent } from 'undici';
+import { openAICompatible } from '@genkit-ai/compat-oai';
 
 interface GenkitConfig {
   aiProvider?: 'google' | 'ollama';
@@ -15,14 +14,6 @@ let configuredAi: any;
 
 const TEN_MINUTES_IN_MS = 600000;
 
-// Set a global dispatcher with a long timeout for all fetch requests.
-// This is necessary to prevent timeouts when using Ollama with large models.
-setGlobalDispatcher(new Agent({
-  headersTimeout: TEN_MINUTES_IN_MS,
-  bodyTimeout: TEN_MINUTES_IN_MS,
-}));
-
-
 // Function to configure Genkit dynamically
 export const configureGenkit = async (config: GenkitConfig = {}) => {
   const plugins: Plugin[] = [];
@@ -30,10 +21,12 @@ export const configureGenkit = async (config: GenkitConfig = {}) => {
   const {aiProvider = 'google', ollamaHost, ollamaModel} = config;
 
   if (aiProvider === 'ollama' && ollamaHost && ollamaModel) {
-    plugins.push(
-      ollama({
-        serverAddress: ollamaHost,
-        models: [{ name: ollamaModel }],
+     plugins.push(
+      openAICompatible({
+        name: 'ollama',
+        apiKey: 'ollama', // Required, but can be a placeholder for local servers
+        baseURL: `${ollamaHost}/v1`,
+        timeout: TEN_MINUTES_IN_MS,
       })
     );
   } else {
